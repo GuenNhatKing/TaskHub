@@ -8,6 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
 from .comment import Comment
+from .workspace import Workspace
 
 EMAIL_LENGTH = 255
 FULLNAME_LENGTH = 100
@@ -45,4 +46,9 @@ class User(Base):
     comments: Mapped[list[Comment]] = relationship(
         back_populates="author",
         cascade="all, delete-orphan" # Xóa đi nếu User bị xóa và User xóa comment
+    )
+
+    workspaces: Mapped[list[Workspace]] = relationship(
+        back_populates="owner",
+        cascade="all, delete-orphan"
     )
