@@ -4,9 +4,10 @@ from enum import Enum
 
 from sqlalchemy import UUID, DateTime, String, func
 from sqlalchemy import Enum as SqlAlchemyEnum
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
+from .comment import Comment
 
 TITLE_LENGTH = 100
 DESC_LENGTH = 1000
@@ -53,4 +54,9 @@ class Task(Base):
     created_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    comments: Mapped[list[Comment]] = relationship(
+        back_populates="task",
+        cascade="all, delete-orphan" # Xóa đi nếu Task bị xóa và xóa coment khỏi Task
     )

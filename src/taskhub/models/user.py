@@ -4,9 +4,10 @@ from enum import Enum
 
 from sqlalchemy import UUID, Boolean, DateTime, String, func
 from sqlalchemy import Enum as SqlAlchemyEnum
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
+from .comment import Comment
 
 EMAIL_LENGTH = 255
 FULLNAME_LENGTH = 100
@@ -39,4 +40,9 @@ class User(Base):
         DateTime(timezone=True),
         server_default=func.now(),  # Tự động điền thời gian ở phía DB
         nullable=False,
+    )
+
+    comments: Mapped[list[Comment]] = relationship(
+        back_populates="author",
+        cascade="all, delete-orphan" # Xóa đi nếu User bị xóa và User xóa comment
     )
