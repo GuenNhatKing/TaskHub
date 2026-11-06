@@ -5,6 +5,7 @@ from sqlalchemy import UUID, DateTime, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
+from .project import Project
 from .user import User
 from .workspace_member import WorkspaceMember
 
@@ -27,5 +28,8 @@ class Workspace(Base):
 
     owner: Mapped[User] = relationship(back_populates="workspaces")
     members: Mapped[list[WorkspaceMember]] = relationship(
+        back_populates="workspace", cascade="all, delete-orphan"
+    )
+    projects: Mapped[list[Project]] = relationship(
         back_populates="workspace", cascade="all, delete-orphan"
     )
