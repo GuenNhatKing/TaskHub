@@ -40,9 +40,7 @@ class Label(Base):
     )
     name: Mapped[str] = mapped_column(String(LABEL_NAME_LENGTH), nullable=False)
     color: Mapped[LabelColor] = mapped_column(
-        SqlAlchemyEnum(LabelColor.BLUE), nullable=False
+        SqlAlchemyEnum(LabelColor), default=LabelColor.BLUE, nullable=False
     )
 
-    project: Mapped[Project] = relationship(
-        back_populates="labels"
-    )
+    project: Mapped[Project] = relationship(back_populates="labels")
