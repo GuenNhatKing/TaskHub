@@ -1,13 +1,16 @@
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import UUID, DateTime, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
-from .project import Project
-from .user import User
-from .workspace_member import WorkspaceMember
+
+if TYPE_CHECKING:
+    from .project import Project
+    from .user import User
+    from .workspace_member import WorkspaceMember
 
 WORKSPACE_NAME_LENGTH = 100
 

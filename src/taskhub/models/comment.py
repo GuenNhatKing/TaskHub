@@ -1,12 +1,15 @@
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import UUID, DateTime, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
-from .task import Task
-from .user import User
+
+if TYPE_CHECKING:
+    from .task import Task
+    from .user import User
 
 CONTENT_LENGTH = 1000
 

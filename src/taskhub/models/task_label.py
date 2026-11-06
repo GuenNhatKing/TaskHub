@@ -1,11 +1,14 @@
 import uuid
+from typing import TYPE_CHECKING
 
 from sqlalchemy import UUID, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
-from .label import Label
-from .task import Task
+
+if TYPE_CHECKING:
+    from .label import Label
+    from .task import Task
 
 
 class TaskLabel(Base):

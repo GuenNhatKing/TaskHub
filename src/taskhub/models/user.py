@@ -1,16 +1,19 @@
 import uuid
 from datetime import datetime
 from enum import Enum
+from typing import TYPE_CHECKING
 
 from sqlalchemy import UUID, Boolean, DateTime, String, func
 from sqlalchemy import Enum as SqlAlchemyEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
-from .comment import Comment
-from .task import Task
-from .workspace import Workspace
-from .workspace_member import WorkspaceMember
+
+if TYPE_CHECKING:
+    from .comment import Comment
+    from .task import Task
+    from .workspace import Workspace
+    from .workspace_member import WorkspaceMember
 
 EMAIL_LENGTH = 255
 FULLNAME_LENGTH = 100

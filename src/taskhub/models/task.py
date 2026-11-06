@@ -1,16 +1,19 @@
 import uuid
 from datetime import datetime
 from enum import Enum
+from typing import TYPE_CHECKING
 
 from sqlalchemy import UUID, DateTime, ForeignKey, String, func
 from sqlalchemy import Enum as SqlAlchemyEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
-from .comment import Comment
-from .label import Label
-from .project import Project
-from .user import User
+
+if TYPE_CHECKING:
+    from .comment import Comment
+    from .label import Label
+    from .project import Project
+    from .user import User
 
 TITLE_LENGTH = 100
 DESC_LENGTH = 1000
