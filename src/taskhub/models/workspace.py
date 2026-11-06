@@ -6,6 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
 from .user import User
+from .workspace_member import WorkspaceMember
 
 WORKSPACE_NAME_LENGTH = 100
 
@@ -25,3 +26,6 @@ class Workspace(Base):
     )
 
     owner: Mapped[User] = relationship(back_populates="workspaces")
+    members: Mapped[list[WorkspaceMember]] = relationship(
+        back_populates="workspace", cascade="all, delete-orphan"
+    )

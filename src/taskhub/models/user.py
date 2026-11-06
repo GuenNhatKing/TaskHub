@@ -9,6 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base
 from .comment import Comment
 from .workspace import Workspace
+from .workspace_member import WorkspaceMember
 
 EMAIL_LENGTH = 255
 FULLNAME_LENGTH = 100
@@ -52,3 +53,9 @@ class User(Base):
         back_populates="owner",
         cascade="all, delete-orphan"
     )
+
+    workspace_members: Mapped[list[WorkspaceMember]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+
