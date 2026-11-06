@@ -7,6 +7,7 @@ from sqlalchemy import Enum as SqlAlchemyEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
+from .label import Label
 from .task import Task
 from .workspace import Workspace
 
@@ -41,3 +42,4 @@ class Project(Base):
 
     workspace: Mapped[Workspace] = relationship(back_populates="projects")
     tasks: Mapped[list[Task]] = relationship(back_populates="project")
+    labels: Mapped[list[Label]] = relationship(back_populates="project", cascade="all, delete-orphan")

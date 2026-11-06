@@ -1,11 +1,12 @@
 import uuid
 from enum import Enum
 
-from sqlalchemy import UUID, String
+from sqlalchemy import UUID, ForeignKey, String
 from sqlalchemy import Enum as SqlAlchemyEnum
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
+from .project import Project
 
 LABEL_NAME_LENGTH = 100
 
@@ -31,9 +32,14 @@ class Label(Base):
     )
     project_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
+        ForeignKey("projects.id"),
         nullable=False,
     )
     name: Mapped[str] = mapped_column(String(LABEL_NAME_LENGTH), nullable=False)
     color: Mapped[LabelColor] = mapped_column(
         SqlAlchemyEnum(LabelColor.BLUE), nullable=False
+    )
+
+    project: Mapped[Project] = relationship(
+        back_populates="labels"
     )

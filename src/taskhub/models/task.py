@@ -8,6 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
 from .comment import Comment
+from .label import Label
 from .project import Project
 from .user import User
 
@@ -70,4 +71,7 @@ class Task(Base):
     )
     creator: Mapped[User] = relationship(
         back_populates="created_tasks", foreign_keys=[created_by]
+    )
+    labels: Mapped[list[Label]] = relationship(
+        back_populates="task", cascade="all, delete-orphan"
     )
