@@ -8,6 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
 from .comment import Comment
+from .task import Task
 from .workspace import Workspace
 from .workspace_member import WorkspaceMember
 
@@ -46,16 +47,24 @@ class User(Base):
 
     comments: Mapped[list[Comment]] = relationship(
         back_populates="author",
-        cascade="all, delete-orphan" # Xóa đi nếu User bị xóa và User xóa comment
+        cascade="all, delete-orphan",  # Xóa đi nếu User bị xóa và User xóa comment
     )
 
     workspaces: Mapped[list[Workspace]] = relationship(
-        back_populates="owner",
-        cascade="all, delete-orphan"
+        back_populates="owner", cascade="all, delete-orphan"
     )
 
     workspace_members: Mapped[list[WorkspaceMember]] = relationship(
-        back_populates="user",
-        cascade="all, delete-orphan"
+        back_populates="user", cascade="all, delete-orphan"
     )
 
+    created_tasks: Mapped[list[Task]] = relationship(
+        back_populates="creator",
+        cascade="all, delete-orphan",
+        foreign_keys="[Task.created_by]", # Vì có 2 Task được gọi phải chỉ định
+    )
+    assigned_tasks: Mapped[list[Task]] = relationship(
+        back_populates="assignee",
+        cascade="all, delete-orphan",
+        foreign_keys="[Task.assignee_id]",
+    )
