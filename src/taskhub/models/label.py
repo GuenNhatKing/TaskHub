@@ -10,6 +10,7 @@ from .base import Base
 
 if TYPE_CHECKING:
     from .project import Project
+    from .task_label import TaskLabel
 
 LABEL_NAME_LENGTH = 100
 
@@ -44,3 +45,7 @@ class Label(Base):
     )
 
     project: Mapped[Project] = relationship(back_populates="labels")
+
+    task_labels: Mapped[list[TaskLabel]] = relationship(
+        back_populates="label", cascade="all, delete-orphan"
+    )

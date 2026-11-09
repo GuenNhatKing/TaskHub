@@ -11,8 +11,8 @@ from .base import Base
 
 if TYPE_CHECKING:
     from .comment import Comment
-    from .label import Label
     from .project import Project
+    from .task_label import TaskLabel
     from .user import User
 
 TITLE_LENGTH = 100
@@ -75,6 +75,6 @@ class Task(Base):
     creator: Mapped[User] = relationship(
         back_populates="created_tasks", foreign_keys=[created_by]
     )
-    labels: Mapped[list[Label]] = relationship(
+    task_labels: Mapped[list[TaskLabel]] = relationship(
         back_populates="task", cascade="all, delete-orphan"
     )
