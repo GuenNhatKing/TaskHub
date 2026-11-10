@@ -48,13 +48,13 @@ class BaseRepository[T: Base]:
         for key, value in data.items():
             setattr(instance, key, value)
 
-        await self.session.flush()
+        await self.db.flush()
 
         return instance
 
     async def delete(self, instance: T) -> None:
-        await self.session.delete(instance)
-        await self.session.flush()
+        await self.db.delete(instance)
+        await self.db.flush()
 
     # Phải chỉ định order_by, nên là created_at
     async def get_with_pagination(
