@@ -77,11 +77,11 @@ class BaseRepository[T: Base]:
         )
         items = list(items_raw.scalars().all())
 
-        result: Page[T] = {
-            items: items,
-            total: total,
-            page: page,
-            page_size: page_size,
-            total_pages: total_pages,
-        }
+        result = Page[self.model](
+            items=items,
+            total=total,
+            page=page,
+            page_size=page_size,
+            total_pages=total_pages,
+        )
         return result
