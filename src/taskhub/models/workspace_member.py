@@ -1,22 +1,17 @@
 import uuid
-from enum import Enum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import UUID, ForeignKey
 from sqlalchemy import Enum as SqlAlchemyEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from taskhub.core.enums import WorkspaceMemberRole
+
 from .base import Base
 
 if TYPE_CHECKING:
     from .user import User
     from .workspace import Workspace
-
-
-class WorkspaceMemberRole(str, Enum):
-    OWNER = "OWNER"
-    EDITOR = "EDITOR"
-    VIEWER = "VIEWER"
 
 
 class WorkspaceMember(Base):

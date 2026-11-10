@@ -1,11 +1,13 @@
 import uuid
 from datetime import datetime
-from enum import Enum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import UUID, Boolean, DateTime, String, func
 from sqlalchemy import Enum as SqlAlchemyEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from taskhub.core.constants import EMAIL_LENGTH, FULLNAME_LENGTH
+from taskhub.core.enums import ROLE
 
 from .base import Base
 
@@ -14,14 +16,6 @@ if TYPE_CHECKING:
     from .task import Task
     from .workspace import Workspace
     from .workspace_member import WorkspaceMember
-
-EMAIL_LENGTH = 255
-FULLNAME_LENGTH = 100
-
-
-class ROLE(str, Enum):
-    ADMIN = "ADMIN"
-    MEMBER = "MEMBER"
 
 
 class User(Base):

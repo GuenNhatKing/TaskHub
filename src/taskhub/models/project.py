@@ -1,11 +1,13 @@
 import uuid
 from datetime import datetime
-from enum import Enum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import UUID, DateTime, ForeignKey, String, func
 from sqlalchemy import Enum as SqlAlchemyEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from taskhub.core.constants import DESC_LENGTH, PROJECT_NAME_LENGTH
+from taskhub.core.enums import ProjectStatus
 
 from .base import Base
 
@@ -13,14 +15,6 @@ if TYPE_CHECKING:
     from .label import Label
     from .task import Task
     from .workspace import Workspace
-
-PROJECT_NAME_LENGTH = 100
-DESC_LENGTH = 1000
-
-
-class ProjectStatus(str, Enum):
-    ACTIVE = "ACTIVE"
-    ARCHIVED = "ARCHIVED"
 
 
 class Project(Base):

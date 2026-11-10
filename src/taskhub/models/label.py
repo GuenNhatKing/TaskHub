@@ -1,10 +1,11 @@
 import uuid
-from enum import Enum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import UUID, ForeignKey, String
 from sqlalchemy import Enum as SqlAlchemyEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from taskhub.core.enums import LabelColor
 
 from .base import Base
 
@@ -13,19 +14,6 @@ if TYPE_CHECKING:
     from .task_label import TaskLabel
 
 LABEL_NAME_LENGTH = 100
-
-
-class LabelColor(str, Enum):
-    RED = "#EF4444"
-    ORANGE = "#F97316"
-    YELLOW = "#EAB308"
-    GREEN = "#22C55E"
-    BLUE = "#3B82F6"
-    PURPLE = "#A855F7"
-    PINK = "#EC4899"
-    TEAL = "#14B8A6"
-    BROWN = "#78350F"
-    GRAY = "#6B7280"
 
 
 class Label(Base):

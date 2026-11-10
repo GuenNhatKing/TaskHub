@@ -1,11 +1,13 @@
 import uuid
 from datetime import datetime
-from enum import Enum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import UUID, DateTime, ForeignKey, String, func
 from sqlalchemy import Enum as SqlAlchemyEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from taskhub.core.constants import DESC_LENGTH, TITLE_LENGTH
+from taskhub.core.enums import Priority, TaskStatus
 
 from .base import Base
 
@@ -14,23 +16,6 @@ if TYPE_CHECKING:
     from .project import Project
     from .task_label import TaskLabel
     from .user import User
-
-TITLE_LENGTH = 100
-DESC_LENGTH = 1000
-
-
-class TaskStatus(str, Enum):
-    TODO = "TODO"
-    IN_PROGRESS = "IN_PROGRESS"
-    IN_REVIEW = "IN_REVIEW"
-    DONE = "DONE"
-
-
-class Priority(str, Enum):
-    LOW = "LOW"
-    MEDIUM = "MEDIUM"
-    HIGH = "HIGH"
-    URGENT = "URGENT"
 
 
 class Task(Base):

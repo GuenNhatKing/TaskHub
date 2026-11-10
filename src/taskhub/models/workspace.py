@@ -5,14 +5,14 @@ from typing import TYPE_CHECKING
 from sqlalchemy import UUID, DateTime, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from taskhub.core.constants import WORKSPACE_NAME_LENGTH
+
 from .base import Base
 
 if TYPE_CHECKING:
     from .project import Project
     from .user import User
     from .workspace_member import WorkspaceMember
-
-WORKSPACE_NAME_LENGTH = 100
 
 
 class Workspace(Base):
