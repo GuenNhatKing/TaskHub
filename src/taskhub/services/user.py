@@ -1,5 +1,6 @@
 import uuid
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from taskhub.exceptions import EmailExistedException, UserNotFoundException
@@ -33,6 +34,10 @@ class UserServices:
             user = await self.repository.create(user_dict)
             await self.db.commit()
             return user
+        except IntegrityError:
+            # Dù đã kiểm tra trước đó, vẫn có khả năng race!!
+            await self.db.rollback()
+            raise EmailExistedException(data.email)
         except Exception:
             await self.db.rollback()
             raise
