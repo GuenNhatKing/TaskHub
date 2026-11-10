@@ -65,8 +65,8 @@ class BaseRepository[T: Base]:
         if page < 1 or page_size < 1:
             raise ValueError("page và page_size phải lớn hơn 1")
 
-        total: int = self.db.execute(
-            select(func.count()).select_from(self.model)
+        total: int = (
+            await self.db.execute(select(func.count()).select_from(self.model))
         ).scalar_one()
 
         total_pages = (total + page_size - 1) // page_size
