@@ -44,5 +44,9 @@ class Project(Base):
     )
 
     workspace: Mapped[Workspace] = relationship(back_populates="projects")
-    tasks: Mapped[list[Task]] = relationship(back_populates="project")
-    labels: Mapped[list[Label]] = relationship(back_populates="project", cascade="all, delete-orphan")
+    tasks: Mapped[list[Task]] = relationship(
+        back_populates="project", cascade="all, delete-orphan"
+    )
+    labels: Mapped[list[Label]] = relationship(
+        back_populates="project", cascade="all, delete-orphan"
+    )
