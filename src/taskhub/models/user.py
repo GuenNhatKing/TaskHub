@@ -1,20 +1,21 @@
 import uuid
 from datetime import datetime
-from enum import Enum
+from typing import TYPE_CHECKING
 
 from sqlalchemy import UUID, Boolean, DateTime, String, func
 from sqlalchemy import Enum as SqlAlchemyEnum
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from taskhub.core.constants import EMAIL_LENGTH, FULLNAME_LENGTH
+from taskhub.core.enums import ROLE
 
 from .base import Base
 
-EMAIL_LENGTH = 255
-FULLNAME_LENGTH = 100
-
-
-class ROLE(str, Enum):
-    ADMIN = "ADMIN"
-    MEMBER = "MEMBER"
+if TYPE_CHECKING:
+    from .comment import Comment
+    from .task import Task
+    from .workspace import Workspace
+    from .workspace_member import WorkspaceMember
 
 
 class User(Base):
@@ -39,4 +40,26 @@ class User(Base):
         DateTime(timezone=True),
         server_default=func.now(),  # Tự động điền thời gian ở phía DB
         nullable=False,
+    )
+
+    comments: Mapped[list[Comment]] = relationship(
+        back_populates="author",
+        cascade="all, delete-orphan",  # Xóa đi nếu User bị xóa và User xóa comment
+    )
+
+    workspaces: Mapped[list[Workspace]] = relationship(
+        back_populates="owner", cascade="all, delete-orphan"
+    )
+
+    workspace_members: Mapped[list[WorkspaceMember]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+
+    created_tasks: Mapped[list[Task]] = relationship(
+        back_populates="creator",
+        foreign_keys="[Task.created_by]",  # Vì có 2 Task được gọi phải chỉ định
+    )
+    assigned_tasks: Mapped[list[Task]] = relationship(
+        back_populates="assignee",
+        foreign_keys="[Task.assignee_id]",
     )

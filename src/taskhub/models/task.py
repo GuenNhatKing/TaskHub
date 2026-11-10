@@ -1,0 +1,65 @@
+import uuid
+from datetime import datetime
+from typing import TYPE_CHECKING
+
+from sqlalchemy import UUID, DateTime, ForeignKey, String, func
+from sqlalchemy import Enum as SqlAlchemyEnum
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from taskhub.core.constants import DESC_LENGTH, TITLE_LENGTH
+from taskhub.core.enums import Priority, TaskStatus
+
+from .base import Base
+
+if TYPE_CHECKING:
+    from .comment import Comment
+    from .project import Project
+    from .task_label import TaskLabel
+    from .user import User
+
+
+class Task(Base):
+    __tablename__ = "tasks"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), default=uuid.uuid4, primary_key=True
+    )
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("projects.id"), nullable=False
+    )
+    assignee_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    title: Mapped[str] = mapped_column(String(TITLE_LENGTH), nullable=False)
+    description: Mapped[str | None] = mapped_column(String(DESC_LENGTH), nullable=True)
+    status: Mapped[TaskStatus] = mapped_column(
+        SqlAlchemyEnum(TaskStatus), default=TaskStatus.TODO, nullable=False
+    )
+    priority: Mapped[Priority] = mapped_column(
+        SqlAlchemyEnum(Priority), default=Priority.MEDIUM, nullable=False
+    )
+    due_date: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_by: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    comments: Mapped[list[Comment]] = relationship(
+        back_populates="task",
+        cascade="all, delete-orphan",  # Xóa đi nếu Task bị xóa và xóa coment khỏi Task
+    )
+    project: Mapped[Project] = relationship(back_populates="tasks")
+    assignee: Mapped[User | None] = relationship(
+        back_populates="assigned_tasks",
+        foreign_keys=[assignee_id],  # Vì có 2 khóa ngoại đến User nên phải chỉ định
+    )
+    creator: Mapped[User] = relationship(
+        back_populates="created_tasks", foreign_keys=[created_by]
+    )
+    task_labels: Mapped[list[TaskLabel]] = relationship(
+        back_populates="task", cascade="all, delete-orphan"
+    )

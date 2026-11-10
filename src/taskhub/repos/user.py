@@ -1,23 +1,18 @@
-import uuid
-
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from taskhub.models import User
 
+from .base import BaseRepository
 
-class UserRepository:
+
+class UserRepository(BaseRepository[User]):
     def __init__(self, db: AsyncSession):
-        self.db = db
+        super().__init__(db=db, model=User)
 
-    async def get_by_id(self, user_id: uuid.UUID) -> User | None:
-        result = await self.db.execute(select(User).where(User.id == user_id))
-        return result.scalar_one_or_none()
-
-    async def create_user(self, user: User) -> User:
-        self.db.add(user)
-
-        await self.db.flush()
-        await self.db.refresh(user)
-
+    async def get_by_email(self, email: str) -> User | None:
+        result = await self.db.execute(
+            select(self.model).where(self.model.email == email)
+        )
+        user = result.scalar_one_or_none()
         return user
