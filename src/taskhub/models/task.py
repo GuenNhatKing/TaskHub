@@ -43,7 +43,7 @@ class Task(Base):
         UUID(as_uuid=True), ForeignKey("projects.id"), nullable=False
     )
     assignee_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
     title: Mapped[str] = mapped_column(String(TITLE_LENGTH), nullable=False)
     description: Mapped[str | None] = mapped_column(String(DESC_LENGTH), nullable=True)
@@ -57,7 +57,7 @@ class Task(Base):
         DateTime(timezone=True), nullable=True
     )
     created_by: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

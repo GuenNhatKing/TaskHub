@@ -63,11 +63,9 @@ class User(Base):
 
     created_tasks: Mapped[list[Task]] = relationship(
         back_populates="creator",
-        cascade="all, delete-orphan",
-        foreign_keys="[Task.created_by]", # Vì có 2 Task được gọi phải chỉ định
+        foreign_keys="[Task.created_by]",  # Vì có 2 Task được gọi phải chỉ định
     )
     assigned_tasks: Mapped[list[Task]] = relationship(
         back_populates="assignee",
-        cascade="all, delete-orphan",
         foreign_keys="[Task.assignee_id]",
     )
