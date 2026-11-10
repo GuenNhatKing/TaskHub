@@ -18,8 +18,8 @@ class TaskLabel(Base):
         UUID(as_uuid=True), ForeignKey("tasks.id"), primary_key=True
     )
     label_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("labels.id"), primary_key=True
+        UUID(as_uuid=True), ForeignKey("labels.id"), primary_key=True, index=True
     )
-    
+
     task: Mapped[Task] = relationship(back_populates="task_labels")
     label: Mapped[Label] = relationship(back_populates="task_labels")

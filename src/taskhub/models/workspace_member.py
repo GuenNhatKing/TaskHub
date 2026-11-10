@@ -28,7 +28,7 @@ class WorkspaceMember(Base):
         primary_key=True,
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True
+        UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True, index=True
     )
 
     role: Mapped[WorkspaceMemberRole] = mapped_column(
