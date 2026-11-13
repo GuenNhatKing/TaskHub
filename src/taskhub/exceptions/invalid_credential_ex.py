@@ -1,0 +1,17 @@
+from fastapi import status
+
+from taskhub.core.messages import ErrorCode, ErrorMessage
+
+from .base_business_ex import BaseBusinessException
+
+
+class InvalidCredentialException(BaseBusinessException):
+    def __init__(
+        self,
+        message: str = ErrorMessage.INVALID_CREDENTIAL,
+    ):
+        super().__init__(
+            message=message,
+            code=ErrorCode.INVALID_CREDENTIAL,
+            status_code=status.HTTP_404_NOT_FOUND,
+        )

@@ -1,12 +1,16 @@
-import uuid
-
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.concurrency import run_in_threadpool
 
-from taskhub.exceptions import EmailExistedException, UserNotFoundException
+from taskhub.core.security import hash_password, verify_password
+from taskhub.exceptions import (
+    EmailExistedException,
+    InvalidCredentialException,
+    UserNotFoundException,
+)
 from taskhub.models import User
 from taskhub.repos import UserRepository
-from taskhub.schemas.user import UserCreate
+from taskhub.schemas.user import UserLoginForm, UserRegisterForm
 
 
 class UserServices:
@@ -14,16 +18,20 @@ class UserServices:
         self.db = db
         self.repository = UserRepository(db)
 
-    async def get_by_id(self, user_id: uuid.UUID) -> User:
-        user = await self.repository.get_by_id(user_id)
+    async def get_by_email(self, email: str) -> User:
+        user = await self.repository.get_by_email(email)
         if not user:
-            raise UserNotFoundException(user_id)
+            raise UserNotFoundException(email)
         return user
 
-    async def create_user(self, data: UserCreate):
+    async def create_user(self, data: UserRegisterForm):
         user_dict = data.model_dump()
-        user_dict.pop("password", None)  # Hiện tại chưa xử lý password
-        user_dict["hashed_password"] = "Chua trien khai"  # Hiện tại chưa xử lý password
+        user_dict.pop("password", None)  # Không đưa password vào
+
+        # Dùng để biến hàm đồng bộ thành bất đồng bộ, server không phải chờ hash xong
+        user_dict["hashed_password"] = await run_in_threadpool(
+            hash_password, data.password
+        )
 
         # Kiểm tra email đã tồn tại chưa
         existed_user = await self.repository.get_by_email(data.email)
@@ -41,3 +49,17 @@ class UserServices:
         except Exception:
             await self.db.rollback()
             raise
+
+    async def authenticate_user(self, data: UserLoginForm):
+        user = await self.repository.get_by_email(data.email)
+        if not user:
+            raise InvalidCredentialException()
+
+        is_valid = await run_in_threadpool(
+            verify_password, data.password, user.hashed_password
+        )
+
+        if not is_valid:
+            raise InvalidCredentialException()
+
+        return user
