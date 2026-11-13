@@ -13,5 +13,5 @@ class InvalidCredentialException(BaseBusinessException):
         super().__init__(
             message=message,
             code=ErrorCode.INVALID_CREDENTIAL,
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=status.HTTP_401_UNAUTHORIZED,
         )
