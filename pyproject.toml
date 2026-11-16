@@ -32,6 +32,7 @@ build-backend = "uv_build"
 entrypoint = "taskhub.main:app"
 
 [tool.pytest.ini_options]
+pythonpath = ["."]
 testpaths = ["tests"]
 asyncio_mode = "auto"
 
