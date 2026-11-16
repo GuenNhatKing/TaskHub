@@ -2,18 +2,17 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
-from taskhub.core.security import hash_password, verify_password
+from taskhub.core.security import hash_password
 from taskhub.exceptions import (
     EmailExistedException,
-    InvalidCredentialException,
     UserNotFoundException,
 )
 from taskhub.models import User
 from taskhub.repos import UserRepository
-from taskhub.schemas.user import UserLoginForm, UserRegisterForm
+from taskhub.schemas.user import UserRegisterForm
 
 
-class UserServices:
+class UserService:
     def __init__(self, db: AsyncSession):
         self.db = db
         self.repository = UserRepository(db)
@@ -49,17 +48,3 @@ class UserServices:
         except Exception:
             await self.db.rollback()
             raise
-
-    async def authenticate_user(self, data: UserLoginForm):
-        user = await self.repository.get_by_email(data.email)
-        if not user:
-            raise InvalidCredentialException()
-
-        is_valid = await run_in_threadpool(
-            verify_password, data.password, user.hashed_password
-        )
-
-        if not is_valid:
-            raise InvalidCredentialException()
-
-        return user

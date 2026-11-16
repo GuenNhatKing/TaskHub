@@ -6,6 +6,7 @@ class ErrorCode(Enum):
     EMAIL_EXISTED = "EMAIL_EXISTED"
     USER_NOT_FOUND = "USER_NOT_FOUND"
     INVALID_CREDENTIAL = "INVALID_CREDENTIAL"
+    INACTIVE_USER = "INACTIVE_USER"
 
 
 class ErrorMessage(Enum):
@@ -13,3 +14,4 @@ class ErrorMessage(Enum):
     EMAIL_EXISTED = "Email đã được sử dụng"
     USER_NOT_FOUND = "Người dùng không tồn tại"
     INVALID_CREDENTIAL = "Email hoặc mật khẩu không hợp lệ"
+    INACTIVE_USER = "Tài khoản của bạn đã bị vô hiệu hóa"

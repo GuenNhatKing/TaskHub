@@ -3,6 +3,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     DATABASE_URL: str
+    JWT_SECRET_KEY: str
+    JWT_ALGORITHM: str
+    JWT_ISSUER: str
+    JWT_AUDIENCE: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: str
+    REFRESH_TOKEN_EXPIRE_DAYS: str
 
     model_config = SettingsConfigDict(
         env_file=".env",
