@@ -40,6 +40,7 @@ class UserService:
         try:
             user = await self.repository.create(user_dict)
             await self.db.commit()
+            await self.db.refresh(user)
             return user
         except IntegrityError:
             # Dù đã kiểm tra trước đó, vẫn có khả năng race!!
