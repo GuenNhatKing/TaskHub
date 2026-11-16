@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class ErrorCode(Enum):
+class ErrorCode(str, Enum):
     UNEXPECTED_ERROR = "UNEXPECTED_ERROR"
     EMAIL_EXISTED = "EMAIL_EXISTED"
     USER_NOT_FOUND = "USER_NOT_FOUND"
@@ -9,7 +9,7 @@ class ErrorCode(Enum):
     INACTIVE_USER = "INACTIVE_USER"
 
 
-class ErrorMessage(Enum):
+class ErrorMessage(str, Enum):
     UNEXPECTED_ERROR = "Đã xảy ra lỗi ngoài dự kiến"
     EMAIL_EXISTED = "Email đã được sử dụng"
     USER_NOT_FOUND = "Người dùng không tồn tại"
