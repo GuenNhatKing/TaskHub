@@ -1,4 +1,4 @@
-REGISTER_URL = "/api/v1/auth/register"
+from tests.api.v1.constants import REGISTER_URL
 
 
 async def test_register_success(api_client, active_user):

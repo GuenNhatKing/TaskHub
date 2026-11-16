@@ -1,5 +1,4 @@
-LOGIN_URL = "/api/v1/auth/login"
-REFRESH_URL = "/api/v1/auth/refresh"
+from tests.api.v1.constants import LOGIN_URL, REFRESH_URL
 
 
 async def test_refresh_token_success(api_client, active_user):

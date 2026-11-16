@@ -1,4 +1,4 @@
-LOGIN_URL = "/api/v1/auth/login"
+from tests.api.v1.constants import LOGIN_URL
 
 
 async def test_login_success(api_client, active_user):
