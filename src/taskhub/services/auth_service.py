@@ -19,6 +19,7 @@ class AuthService:
         self.db = db
         self.repository = UserRepository(db)
 
+    @staticmethod
     def _create_token_response(email: str) -> TokenResponse:
         return TokenResponse(
             access_token=create_access_token(email),
