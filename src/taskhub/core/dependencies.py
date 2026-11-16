@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from taskhub.services import UserService
+from taskhub.services import AuthService, UserService
 
 from .session import AsyncSessionLocal
 
@@ -13,5 +13,9 @@ async def get_db():
         yield session
 
 
-def get_user_services(db: Annotated[AsyncSession, Depends(get_db)]) -> UserService:
+def get_user_service(db: Annotated[AsyncSession, Depends(get_db)]) -> UserService:
     return UserService(db)
+
+
+def get_auth_service(db: Annotated[AsyncSession, Depends(get_db)]):
+    return AuthService(db)
