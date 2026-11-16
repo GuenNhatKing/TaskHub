@@ -81,4 +81,4 @@ async def test_logout_invalid_token(api_client):
         },
     )
 
-    assert response.status_code == 204
+    assert response.status_code == 401
