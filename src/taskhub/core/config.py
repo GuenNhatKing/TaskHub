@@ -7,8 +7,8 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str
     JWT_ISSUER: str
     JWT_AUDIENCE: str
-    ACCESS_TOKEN_EXPIRE_MINUTES: str
-    REFRESH_TOKEN_EXPIRE_DAYS: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
+    REFRESH_TOKEN_EXPIRE_DAYS: int
 
     model_config = SettingsConfigDict(
         env_file=".env",
