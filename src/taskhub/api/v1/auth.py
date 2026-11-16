@@ -31,7 +31,7 @@ async def login(
 
 @router.post("/refresh", response_model=TokenResponse, status_code=status.HTTP_200_OK)
 async def refresh(
-    refresh_token: RefreshTokenRequest,
+    refresh_request: RefreshTokenRequest,
     services: Annotated[AuthService, Depends(get_auth_service)],
 ):
-    return await services.refresh_tokens(refresh_token)
+    return await services.refresh_tokens(refresh_request)

@@ -10,7 +10,7 @@ from taskhub.core.security import (
 )
 from taskhub.exceptions import InactiveUserException, InvalidCredentialException
 from taskhub.repos import UserRepository
-from taskhub.schemas.token import TokenResponse
+from taskhub.schemas.token import RefreshTokenRequest, TokenResponse
 from taskhub.schemas.user import UserLoginRequest
 
 
@@ -45,11 +45,11 @@ class AuthService:
 
     async def refresh_tokens(
         self,
-        refresh_token: str,
+        refresh_request: RefreshTokenRequest,
     ) -> TokenResponse | None:
 
         try:
-            payload = decode_refresh_token(refresh_token)
+            payload = decode_refresh_token(refresh_request.refresh_token)
         except InvalidTokenError:
             raise InvalidCredentialException("Refresh token không hợp lệ")
 
