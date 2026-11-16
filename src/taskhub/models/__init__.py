@@ -7,6 +7,7 @@ from .task_label import TaskLabel
 from .user import User
 from .workspace import Workspace
 from .workspace_member import WorkspaceMember
+from .revoked_refresh_token import RevokedRefreshToken
 
 __all__ = [
     "Base",

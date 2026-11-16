@@ -96,3 +96,7 @@ def create_refresh_token(email: str) -> str:
 
 def decode_refresh_token(token: str) -> dict:
     return _decode_token(token, token_type="refresh")
+
+
+def hash_refresh_token(token: str) -> str:
+    return crypt_context.hash(token)

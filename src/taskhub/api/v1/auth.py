@@ -8,7 +8,7 @@ from taskhub.services.auth_service import AuthService
 from taskhub.services.user_service import UserService
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
-from taskhub.schemas.token import RefreshTokenRequest, TokenResponse
+from taskhub.schemas.token import LogoutRequest, RefreshTokenRequest, TokenResponse
 
 
 @router.post(
@@ -35,3 +35,11 @@ async def refresh(
     services: Annotated[AuthService, Depends(get_auth_service)],
 ):
     return await services.refresh_tokens(refresh_request)
+
+
+@router.post("/logout", response_model=None, status_code=status.HTTP_204_NO_CONTENT)
+async def logout(
+    logout_request: LogoutRequest,
+    services: Annotated[AuthService, Depends(get_auth_service)],
+):
+    await services.revoke_refresh_token(logout_request)
