@@ -7,13 +7,13 @@ from taskhub.core.validators import LowerEmail, ValidName, ValidPassword
 from taskhub.models.user import ROLE
 
 
-class UserRegisterForm(BaseModel):
+class UserRegisterRequest(BaseModel):
     email: LowerEmail
     full_name: ValidName
     password: ValidPassword
 
 
-class UserLoginForm(BaseModel):
+class UserLoginRequest(BaseModel):
     email: LowerEmail
     password: ValidPassword
 
