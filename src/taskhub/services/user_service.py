@@ -9,7 +9,7 @@ from taskhub.exceptions import (
 )
 from taskhub.models import User
 from taskhub.repos import UserRepository
-from taskhub.schemas.user import UserRegisterForm
+from taskhub.schemas.user import UserRegisterRequest
 
 
 class UserService:
@@ -23,7 +23,7 @@ class UserService:
             raise UserNotFoundException(email)
         return user
 
-    async def create_user(self, data: UserRegisterForm):
+    async def create_user(self, data: UserRegisterRequest):
         user_dict = data.model_dump()
         user_dict.pop("password", None)  # Không đưa password vào
 
