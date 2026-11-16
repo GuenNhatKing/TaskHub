@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+import hashlib
 
 import jwt
 from jwt.exceptions import InvalidTokenError
@@ -99,4 +100,4 @@ def decode_refresh_token(token: str) -> dict:
 
 
 def hash_refresh_token(token: str) -> str:
-    return crypt_context.hash(token)
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()

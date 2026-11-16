@@ -97,7 +97,7 @@ class AuthService:
         if existing is not None:
             return
 
-        revoked_token = {
+        revoked_token_dict = {
             "hashed_token": token_hash,
             "expires_at": datetime.fromtimestamp(
                 payload["exp"],
@@ -106,5 +106,5 @@ class AuthService:
             "revoked_at": datetime.now(UTC),
         }
 
-        await self.revoked_refresh_token_repository.create(revoked_token)
+        await self.revoked_refresh_token_repository.create(revoked_token_dict)
         await self.db.commit()
