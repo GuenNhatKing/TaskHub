@@ -25,8 +25,8 @@ class BaseRepository[T: Base]:
 
     # Dùng Any để cho đối tượng có 1 id hoặc nhiều id
     async def get_by_id(self, id: Any) -> T | None:
-        result = await self.db.execute(select(self.model).where(self.model.id == id))
-        return result.scalar_one_or_none()
+        # Tìm theo primary key, bất kể tên cột là gì
+        return await self.db.get(self.model, id)
 
     async def get_all(self) -> list[T]:
         result = await self.db.execute(select(self.model))

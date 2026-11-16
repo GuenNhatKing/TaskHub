@@ -12,7 +12,6 @@ from taskhub.core.security import (
     verify_password,
 )
 from taskhub.exceptions import InactiveUserException, InvalidCredentialException
-from taskhub.models import RevokedRefreshToken
 from taskhub.repos import RevokedRefreshTokenRepository, UserRepository
 from taskhub.schemas.token import LogoutRequest, RefreshTokenRequest, TokenResponse
 from taskhub.schemas.user import UserLoginRequest
@@ -22,7 +21,7 @@ class AuthService:
     def __init__(self, db: AsyncSession):
         self.db = db
         self.user_repository = UserRepository(db)
-        self.revoked_refresh_token_repository = RevokedRefreshTokenRepository
+        self.revoked_refresh_token_repository = RevokedRefreshTokenRepository(db)
 
     @staticmethod
     def _create_token_response(email: str) -> TokenResponse:
@@ -93,22 +92,19 @@ class AuthService:
         token_hash = hash_refresh_token(logout_request.refresh_token)
 
         # Tránh lưu trùng token
-        existing = await self.db.get(
-            RevokedRefreshToken,
-            token_hash,
-        )
+        existing = await self.revoked_refresh_token_repository.get_by_id(token_hash)
 
         if existing is not None:
             return
 
-        revoked_token = RevokedRefreshToken(
-            token_hash=token_hash,
-            expires_at=datetime.fromtimestamp(
+        revoked_token = {
+            "hashed_token": token_hash,
+            "expires_at": datetime.fromtimestamp(
                 payload["exp"],
                 UTC,
             ),
-            revoked_at=datetime.now(UTC),
-        )
+            "revoked_at": datetime.now(UTC),
+        }
 
         await self.revoked_refresh_token_repository.create(revoked_token)
         await self.db.commit()
