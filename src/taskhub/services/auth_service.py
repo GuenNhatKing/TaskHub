@@ -2,6 +2,7 @@ import uuid
 from datetime import UTC, datetime
 
 from jwt import InvalidTokenError
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
@@ -58,13 +59,21 @@ class AuthService:
         except InvalidTokenError:
             raise InvalidCredentialException("Refresh token không hợp lệ")
 
-        # Kiểm tra token bị revoke chưa
+        # Revoke token
+        revoked_token_dict = {
+            "id": jti,
+            "expires_at": datetime.fromtimestamp(payload["exp"], UTC),
+            "revoked_at": datetime.now(UTC),
+        }
 
-        revoked_token = await self.revoked_refresh_token_repository.get_by_id(jti)
-
-        if revoked_token is not None:
+        try:
+            await self.revoked_refresh_token_repository.create(revoked_token_dict)
+            await self.db.commit()
+        except IntegrityError:
+            await self.db.rollback()
             raise InvalidCredentialException("Refresh token không hợp lệ")
 
+        # Cấp token mới
         user_id = uuid.UUID(payload["sub"])
 
         user = await self.user_repository.get_by_id(user_id)
