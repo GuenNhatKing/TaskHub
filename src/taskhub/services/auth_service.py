@@ -1,3 +1,4 @@
+import uuid
 from datetime import UTC, datetime
 
 from jwt import InvalidTokenError
@@ -8,7 +9,6 @@ from taskhub.core.security import (
     create_access_token,
     create_refresh_token,
     decode_refresh_token,
-    hash_refresh_token,
     verify_password,
 )
 from taskhub.exceptions import InactiveUserException, InvalidCredentialException
@@ -24,10 +24,10 @@ class AuthService:
         self.revoked_refresh_token_repository = RevokedRefreshTokenRepository(db)
 
     @staticmethod
-    def _create_token_response(email: str) -> TokenResponse:
+    def _create_token_response(user_id: str) -> TokenResponse:
         return TokenResponse(
-            access_token=create_access_token(email),
-            refresh_token=create_refresh_token(email),
+            access_token=create_access_token(user_id),
+            refresh_token=create_refresh_token(user_id),
         )
 
     async def authenticate_user(self, data: UserLoginRequest) -> TokenResponse:
@@ -45,7 +45,7 @@ class AuthService:
         if not is_valid:
             raise InvalidCredentialException()
 
-        return self._create_token_response(user.email)
+        return self._create_token_response(user.id)
 
     async def refresh_tokens(
         self,
@@ -54,22 +54,20 @@ class AuthService:
 
         try:
             payload = decode_refresh_token(refresh_request.refresh_token)
+            jti = uuid.UUID(payload["jti"])
         except InvalidTokenError:
             raise InvalidCredentialException("Refresh token không hợp lệ")
 
         # Kiểm tra token bị revoke chưa
-        token_hash = hash_refresh_token(refresh_request.refresh_token)
 
-        revoked_token = await self.revoked_refresh_token_repository.get_by_id(
-            token_hash
-        )
+        revoked_token = await self.revoked_refresh_token_repository.get_by_id(jti)
 
         if revoked_token is not None:
             raise InvalidCredentialException("Refresh token không hợp lệ")
 
-        email = payload["sub"]
+        user_id = uuid.UUID(payload["sub"])
 
-        user = await self.user_repository.get_by_email(email)
+        user = await self.user_repository.get_by_id(user_id)
 
         if not user:
             raise InvalidCredentialException()
@@ -77,7 +75,7 @@ class AuthService:
         if not user.is_active:
             raise InactiveUserException()
 
-        return self._create_token_response(user.email)
+        return self._create_token_response(user.id)
 
     async def revoke_refresh_token(
         self,
@@ -86,19 +84,18 @@ class AuthService:
 
         try:
             payload = decode_refresh_token(logout_request.refresh_token)
+            jti = uuid.UUID(payload["jti"])
         except InvalidTokenError:
             raise InvalidCredentialException("Refresh token không hợp lệ")
 
-        token_hash = hash_refresh_token(logout_request.refresh_token)
-
         # Tránh lưu trùng token
-        existing = await self.revoked_refresh_token_repository.get_by_id(token_hash)
+        existing = await self.revoked_refresh_token_repository.get_by_id(jti)
 
         if existing is not None:
             return
 
         revoked_token_dict = {
-            "hashed_token": token_hash,
+            "id": jti,
             "expires_at": datetime.fromtimestamp(
                 payload["exp"],
                 UTC,

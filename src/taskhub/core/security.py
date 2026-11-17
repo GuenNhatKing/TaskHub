@@ -1,5 +1,5 @@
 from datetime import UTC, datetime, timedelta
-import hashlib
+from uuid import uuid4
 
 import jwt
 from jwt.exceptions import InvalidTokenError
@@ -40,11 +40,12 @@ def verify_password(
     )
 
 
-def _create_token(email: str, token_type: str, expires_delta: timedelta) -> str:
+def _create_token(user_id: str, token_type: str, expires_delta: timedelta) -> str:
     now = datetime.now(UTC)
 
     payload = {
-        "sub": str(email),
+        "sub": str(user_id),
+        "jti": str(uuid4()),
         "type": token_type,
         "iat": now,
         "exp": now + expires_delta,
@@ -66,7 +67,7 @@ def _decode_token(token: str, token_type: str) -> dict:
         algorithms=[settings.JWT_ALGORITHM],
         issuer=settings.JWT_ISSUER,
         audience=settings.JWT_AUDIENCE,
-        options={"require": ["sub", "type", "iat", "exp", "iss", "aud"]},
+        options={"require": ["sub", "jti", "type", "iat", "exp", "iss", "aud"]},
     )
 
     if payload["type"] != token_type:
@@ -75,9 +76,9 @@ def _decode_token(token: str, token_type: str) -> dict:
     return payload
 
 
-def create_access_token(email: str) -> str:
+def create_access_token(user_id: str) -> str:
     return _create_token(
-        email=email,
+        user_id=user_id,
         token_type="access",
         expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
@@ -87,9 +88,9 @@ def decode_access_token(token: str) -> dict:
     return _decode_token(token, token_type="access")
 
 
-def create_refresh_token(email: str) -> str:
+def create_refresh_token(user_id: str) -> str:
     return _create_token(
-        email=email,
+        user_id=user_id,
         token_type="refresh",
         expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
     )
@@ -97,7 +98,3 @@ def create_refresh_token(email: str) -> str:
 
 def decode_refresh_token(token: str) -> dict:
     return _decode_token(token, token_type="refresh")
-
-
-def hash_refresh_token(token: str) -> str:
-    return hashlib.sha256(token.encode("utf-8")).hexdigest()
