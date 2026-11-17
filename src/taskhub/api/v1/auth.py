@@ -42,4 +42,4 @@ async def logout(
     logout_request: LogoutRequest,
     services: Annotated[AuthService, Depends(get_auth_service)],
 ):
-    await services.revoke_refresh_token(logout_request)
+    await services.logout(logout_request)

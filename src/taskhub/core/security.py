@@ -1,3 +1,4 @@
+import uuid
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
@@ -40,7 +41,12 @@ def verify_password(
     )
 
 
-def _create_token(user_id: str, token_type: str, expires_delta: timedelta) -> str:
+def _create_token(
+    user_id: str,
+    token_type: str,
+    expires_delta: timedelta,
+    group: uuid.UUID | None = None,
+) -> str:
     now = datetime.now(UTC)
 
     payload = {
@@ -53,6 +59,9 @@ def _create_token(user_id: str, token_type: str, expires_delta: timedelta) -> st
         "aud": settings.JWT_AUDIENCE,
     }
 
+    if token_type == "refresh":
+        payload["group"] = str(group)
+
     return jwt.encode(
         payload,
         settings.JWT_SECRET_KEY,
@@ -61,13 +70,16 @@ def _create_token(user_id: str, token_type: str, expires_delta: timedelta) -> st
 
 
 def _decode_token(token: str, token_type: str) -> dict:
+    require = ["sub", "jti", "type", "iat", "exp", "iss", "aud"]
+    if token_type == "refresh":
+        require.append("group")
     payload = jwt.decode(
         token,
         settings.JWT_SECRET_KEY,
         algorithms=[settings.JWT_ALGORITHM],
         issuer=settings.JWT_ISSUER,
         audience=settings.JWT_AUDIENCE,
-        options={"require": ["sub", "jti", "type", "iat", "exp", "iss", "aud"]},
+        options={"require": require},
     )
 
     if payload["type"] != token_type:
@@ -88,9 +100,10 @@ def decode_access_token(token: str) -> dict:
     return _decode_token(token, token_type="access")
 
 
-def create_refresh_token(user_id: str) -> str:
+def create_refresh_token(user_id: str, group: uuid.UUID) -> str:
     return _create_token(
         user_id=user_id,
+        group=group,
         token_type="refresh",
         expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
     )
