@@ -97,20 +97,16 @@ class AuthService:
         except InvalidTokenError:
             raise InvalidCredentialException("Refresh token không hợp lệ")
 
-        # Tránh lưu trùng token
-        existing = await self.revoked_refresh_token_repository.get_by_id(jti)
-
-        if existing is not None:
-            return
-
+        # Revoke token (không cần check, có lỗi db thì trả 401)
         revoked_token_dict = {
             "id": jti,
-            "expires_at": datetime.fromtimestamp(
-                payload["exp"],
-                UTC,
-            ),
+            "expires_at": datetime.fromtimestamp(payload["exp"], UTC),
             "revoked_at": datetime.now(UTC),
         }
 
-        await self.revoked_refresh_token_repository.create(revoked_token_dict)
-        await self.db.commit()
+        try:
+            await self.revoked_refresh_token_repository.create(revoked_token_dict)
+            await self.db.commit()
+        except IntegrityError:
+            await self.db.rollback()
+            raise InvalidCredentialException("Refresh token không hợp lệ")
