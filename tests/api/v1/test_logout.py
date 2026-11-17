@@ -64,13 +64,20 @@ async def test_logout_repeatedly(api_client, active_user):
 
     refresh_token = login_response.json()["refresh_token"]
 
-    for _ in range(2):
-        response = await api_client.post(
-            LOGOUT_URL,
-            json={"refresh_token": refresh_token},
-        )
+    response = await api_client.post(
+        LOGOUT_URL,
+        json={"refresh_token": refresh_token},
+    )
 
-        assert response.status_code == 204
+    assert response.status_code == 204
+
+    # Lần 2 nhận về 401
+    response = await api_client.post(
+        LOGOUT_URL,
+        json={"refresh_token": refresh_token},
+    )
+
+    assert response.status_code == 401
 
 
 async def test_logout_invalid_token(api_client):
