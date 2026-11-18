@@ -3,7 +3,7 @@ import pytest_asyncio
 from taskhub.models.base import Base
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture(scope="function", autouse=True)
 async def db_session(db_session_factory):
     async with db_session_factory() as session:
         yield session
