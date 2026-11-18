@@ -89,3 +89,38 @@ async def test_logout_invalid_token(api_client):
     )
 
     assert response.status_code == 401
+
+
+async def test_refresh_token_reuse_detection(api_client, active_user):
+    login_response = await api_client.post(
+        LOGIN_URL,
+        json={
+            "email": active_user["email"],
+            "password": active_user["password"],
+        },
+    )
+    assert login_response.status_code == 200
+    stolen_refresh_token = login_response.json()["refresh_token"]
+
+    # Kẻ gian đánh cắp token này và dùng để refresh trước
+    attacker_refresh_res = await api_client.post(
+        REFRESH_URL,
+        json={"refresh_token": stolen_refresh_token},
+    )
+    assert attacker_refresh_res.status_code == 200
+    attacker_new_refresh_token = attacker_refresh_res.json()["refresh_token"]
+
+    # Chủ tài khoản thật dùng lại token cũ để refresh sau
+    victim_refresh_res = await api_client.post(
+        REFRESH_URL,
+        json={"refresh_token": stolen_refresh_token},
+    )
+    # Hệ thống phải từ chối token đã dùng và kích hoạt khóa toàn bộ group
+    assert victim_refresh_res.status_code == 401
+
+    # Token mới của kẻ gian ở bước 2 cũng phải bị vô hiệu hóa
+    attacker_next_res = await api_client.post(
+        REFRESH_URL,
+        json={"refresh_token": attacker_new_refresh_token},
+    )
+    assert attacker_next_res.status_code == 401
