@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from taskhub.core.dependencies import get_user_service
-from taskhub.schemas.user import UserResponse
+from taskhub.schemas.user import UserChangeProfileRequest, UserResponse
 from taskhub.services.user_service import UserService
 
 security = HTTPBearer()
@@ -19,3 +19,13 @@ async def get_user_info(
 ):
     token = credentials.credentials
     return await services.get_user_info_by_token(token)
+
+
+@router.patch("/me", response_model=UserResponse, status_code=status.HTTP_200_OK)
+async def change_user_info(
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
+    change_profile_request: UserChangeProfileRequest,
+    services: Annotated[UserService, Depends(get_user_service)],
+):
+    token = credentials.credentials
+    return await services.change_user_info_by_token(token, change_profile_request)

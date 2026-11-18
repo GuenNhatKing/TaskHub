@@ -10,7 +10,11 @@ from taskhub.exceptions import (
 )
 from taskhub.exceptions.auth_ex import InactiveUserException, InvalidTokenException
 from taskhub.repos import UserRepository
-from taskhub.schemas.user import UserRegisterRequest, UserResponse
+from taskhub.schemas.user import (
+    UserChangeProfileRequest,
+    UserRegisterRequest,
+    UserResponse,
+)
 
 
 class UserService:
@@ -18,7 +22,7 @@ class UserService:
         self.db = db
         self.repository = UserRepository(db)
 
-    async def get_user_info_by_token(self, token: str) -> UserResponse:
+    async def _get_user(self, token: str):
         payload = decode_access_token(token)
         user_id = uuid.UUID(payload["sub"])
         user = await self.repository.get_by_id(user_id)
@@ -28,6 +32,38 @@ class UserService:
 
         if not user.is_active:
             raise InactiveUserException()
+
+        return user
+
+    async def get_user_info_by_token(self, token: str) -> UserResponse:
+        return await self._get_user(token)
+
+    async def change_user_info_by_token(
+        self, token: str, change_profile_request: UserChangeProfileRequest
+    ):
+
+        user = await self._get_user(token)
+
+        update_data = change_profile_request.model_dump(
+            exclude_unset=True, exclude_none=True
+        )
+        if not update_data:
+            return user
+
+        email = update_data.get("email")
+        # Chỉ kiểm tra trùng nếu người dùng đổi sang một email khác email hiện tại
+        if email and email != user.email:
+            existed_user = await self.repository.get_by_email(email)
+            if existed_user:
+                raise EmailExistedException(email)
+
+        await self.repository.update(user, update_data)
+        try:
+            await self.db.commit()
+            await self.db.refresh(user)
+        except IntegrityError:
+            await self.db.rollback()
+            raise EmailExistedException(email)
 
         return user
 

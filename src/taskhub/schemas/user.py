@@ -32,5 +32,5 @@ class UserResponse(BaseModel):
 
 
 class UserChangeProfileRequest(BaseModel):
-    email: LowerEmail
-    full_name: str
+    email: LowerEmail | None = None
+    full_name: ValidName | None = None
