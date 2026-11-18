@@ -27,6 +27,7 @@ class RevokedRefreshToken(Base):
     )
 
     # Dùng để dọn dẹp định kỳ, đặt index để xóa nhanh hơn
+    # TODO (Day 7 Celery beat).
     expires_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
