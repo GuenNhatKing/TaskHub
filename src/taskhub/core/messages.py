@@ -7,6 +7,7 @@ class ErrorCode(str, Enum):
     USER_NOT_FOUND = "USER_NOT_FOUND"
     INVALID_CREDENTIAL = "INVALID_CREDENTIAL"
     INACTIVE_USER = "INACTIVE_USER"
+    INVALID_TOKEN = "INVALID_TOKEN"
 
 
 class ErrorMessage(str, Enum):
@@ -17,3 +18,4 @@ class ErrorMessage(str, Enum):
     INACTIVE_USER = "Tài khoản của bạn đã bị vô hiệu hóa"
     WEAK_PASSWORD = "Mật khẩu phải bao gồm cả chữ cái và chữ số"
     PASSWORD_TOO_LONG = "Mật khẩu dài quá độ dài quy định"
+    INVALID_REFRESH_TOKEN = "Refresh token không hợp lệ"

@@ -49,7 +49,7 @@ def _create_token(
 
     return jwt.encode(
         payload,
-        settings.JWT_SECRET_KEY,
+        settings.JWT_SECRET_KEY.get_secret_value(),
         algorithm=settings.JWT_ALGORITHM,
     )
 
@@ -60,7 +60,7 @@ def _decode_token(token: str, token_type: str) -> dict:
         require.append("group")
     payload = jwt.decode(
         token,
-        settings.JWT_SECRET_KEY,
+        settings.JWT_SECRET_KEY.get_secret_value(),
         algorithms=[settings.JWT_ALGORITHM],
         issuer=settings.JWT_ISSUER,
         audience=settings.JWT_AUDIENCE,

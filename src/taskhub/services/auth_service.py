@@ -14,6 +14,7 @@ from taskhub.core.security import (
     verify_password,
 )
 from taskhub.exceptions import InactiveUserException, InvalidCredentialException
+from taskhub.exceptions.auth_ex import InvalidTokenException
 from taskhub.repos import RevokedRefreshTokenRepository, UserRepository
 from taskhub.repos.revoked_refresh_group import RevokedRefreshGroupRepository
 from taskhub.schemas.token import LogoutRequest, RefreshTokenRequest, TokenResponse
@@ -35,6 +36,15 @@ class AuthService:
             access_token=create_access_token(user_id),
             refresh_token=create_refresh_token(user_id, refresh_group),
         )
+
+    @staticmethod
+    def _decode_refresh_token(refresh_token: str):
+        try:
+            payload = decode_refresh_token(refresh_token)
+        except InvalidTokenError:
+            raise InvalidTokenException()
+
+        return payload
 
     async def _revoke_refresh_group(self, refresh_group: uuid.UUID):
         revoked_token_group_dict = {
@@ -71,19 +81,16 @@ class AuthService:
     async def refresh_tokens(
         self,
         refresh_request: RefreshTokenRequest,
-    ) -> TokenResponse | None:
+    ) -> TokenResponse:
 
-        try:
-            payload = decode_refresh_token(refresh_request.refresh_token)
-            jti = uuid.UUID(payload["jti"])
-            group = uuid.UUID(payload["group"])
-        except InvalidTokenError:
-            raise InvalidCredentialException("Refresh token không hợp lệ")
+        payload = self._decode_refresh_token(refresh_request.refresh_token)
+        jti = uuid.UUID(payload["jti"])
+        group = uuid.UUID(payload["group"])
 
         # Kiểm tra group đã bị revoke chưa
         revoked_group = await self.revoked_refresh_group_repository.get_by_id(group)
         if revoked_group is not None:
-            raise InvalidCredentialException("Refresh token không hợp lệ")
+            raise InvalidTokenException()
 
         # Kiểm tra thông tin user
         user_id = uuid.UUID(payload["sub"])
@@ -91,7 +98,7 @@ class AuthService:
         user = await self.user_repository.get_by_id(user_id)
 
         if not user:
-            raise InvalidCredentialException()
+            raise InvalidTokenException()
 
         if not user.is_active:
             raise InactiveUserException()
@@ -111,7 +118,7 @@ class AuthService:
             await self.db.rollback()
             # Sử dụng token cũ -> có thể có ai đó đã đánh cắp token và refresh trước -> revoked toàn bộ group
             await self._revoke_refresh_group(group)
-            raise InvalidCredentialException("Refresh token không hợp lệ")
+            raise InvalidTokenException()
 
         # Cấp token mới
         return self._create_token_response(user_id, group)
@@ -121,12 +128,9 @@ class AuthService:
         logout_request: LogoutRequest,
     ) -> None:
 
-        try:
-            payload = decode_refresh_token(logout_request.refresh_token)
-            jti = uuid.UUID(payload["jti"])
-            group = uuid.UUID(payload["group"])
-        except InvalidTokenError:
-            raise InvalidCredentialException("Refresh token không hợp lệ")
+        payload = self._decode_refresh_token(logout_request.refresh_token)
+        jti = uuid.UUID(payload["jti"])
+        group = uuid.UUID(payload["group"])
 
         # Revoke token (không cần check, có lỗi db thì trả 401)
         revoked_token_dict = {
@@ -141,6 +145,6 @@ class AuthService:
             await self.db.commit()
         except IntegrityError:
             await self.db.rollback()
-            raise InvalidCredentialException("Refresh token không hợp lệ")
+            raise InvalidTokenException()
 
         await self._revoke_refresh_group(group)

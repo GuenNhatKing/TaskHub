@@ -2,9 +2,13 @@ from typing import Annotated
 
 from pydantic import AfterValidator, EmailStr, StringConstraints
 
-from taskhub.core.constants import FULLNAME_LENGTH, PASSWORD_LENGTH, PASSWORD_MIN_LENGTH
+from taskhub.core.constants import (
+    BCRYPT_MAX_BYTES,
+    FULLNAME_LENGTH,
+    PASSWORD_LENGTH,
+    PASSWORD_MIN_LENGTH,
+)
 from taskhub.core.messages import ErrorMessage
-from taskhub.core.security import BCRYPT_MAX_BYTES
 
 ValidName = Annotated[
     str,
