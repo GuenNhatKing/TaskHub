@@ -8,6 +8,7 @@ class ErrorCode(str, Enum):
     INVALID_CREDENTIAL = "INVALID_CREDENTIAL"
     INACTIVE_USER = "INACTIVE_USER"
     INVALID_TOKEN = "INVALID_TOKEN"
+    SAME_PASSWORD = "SAME_PASSWORD"
 
 
 class ErrorMessage(str, Enum):
@@ -19,3 +20,4 @@ class ErrorMessage(str, Enum):
     WEAK_PASSWORD = "Mật khẩu phải bao gồm cả chữ cái và chữ số"
     PASSWORD_TOO_LONG = "Mật khẩu dài quá độ dài quy định"
     INVALID_REFRESH_TOKEN = "Refresh token không hợp lệ"
+    SAME_PASSWORD = "Mật khẩu mới trùng với mật khẩu cũ"

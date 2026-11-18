@@ -34,3 +34,8 @@ class UserResponse(BaseModel):
 class UserChangeProfileRequest(BaseModel):
     email: LowerEmail | None = None
     full_name: ValidName | None = None
+
+
+class ChangePasswordRequest(BaseModel):
+    old_password: LoginPassword
+    new_password: ValidPassword
