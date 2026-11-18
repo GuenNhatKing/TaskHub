@@ -10,6 +10,7 @@ from taskhub.core.constants import DUMMY_PASSWORD_HASH
 from taskhub.core.security import (
     create_access_token,
     create_refresh_token,
+    decode_access_token,
     decode_refresh_token,
     verify_password,
 )
@@ -36,15 +37,6 @@ class AuthService:
             access_token=create_access_token(user_id),
             refresh_token=create_refresh_token(user_id, refresh_group),
         )
-
-    @staticmethod
-    def _decode_refresh_token(refresh_token: str):
-        try:
-            payload = decode_refresh_token(refresh_token)
-        except InvalidTokenError:
-            raise InvalidTokenException()
-
-        return payload
 
     async def _revoke_refresh_group(self, refresh_group: uuid.UUID):
         revoked_token_group_dict = {
@@ -83,7 +75,7 @@ class AuthService:
         refresh_request: RefreshTokenRequest,
     ) -> TokenResponse:
 
-        payload = self._decode_refresh_token(refresh_request.refresh_token)
+        payload = decode_refresh_token(refresh_request.refresh_token)
         jti = uuid.UUID(payload["jti"])
         group = uuid.UUID(payload["group"])
 
@@ -128,7 +120,7 @@ class AuthService:
         logout_request: LogoutRequest,
     ) -> None:
 
-        payload = self._decode_refresh_token(logout_request.refresh_token)
+        payload = decode_refresh_token(logout_request.refresh_token)
         jti = uuid.UUID(payload["jti"])
         group = uuid.UUID(payload["group"])
 

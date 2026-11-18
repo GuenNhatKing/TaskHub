@@ -8,6 +8,7 @@ from passlib.context import CryptContext
 
 from taskhub.core.config import settings
 from taskhub.core.constants import BCRYPT_ROUNDS, TokenType
+from taskhub.exceptions.auth_ex import InvalidTokenException
 
 crypt_context = CryptContext(schemes=["bcrypt"], bcrypt__rounds=BCRYPT_ROUNDS)
 
@@ -82,7 +83,11 @@ def create_access_token(user_id: str) -> str:
 
 
 def decode_access_token(token: str) -> dict:
-    return _decode_token(token, token_type=TokenType.ACCESS)
+    try:
+        payload = _decode_token(token, token_type=TokenType.ACCESS)
+    except InvalidTokenError:
+        raise InvalidTokenException()
+    return payload
 
 
 def create_refresh_token(user_id: str, group: uuid.UUID) -> str:
@@ -95,4 +100,8 @@ def create_refresh_token(user_id: str, group: uuid.UUID) -> str:
 
 
 def decode_refresh_token(token: str) -> dict:
-    return _decode_token(token, token_type=TokenType.REFRESH)
+    try:
+        payload = _decode_token(token, token_type=TokenType.REFRESH)
+    except InvalidTokenError:
+        raise InvalidTokenException()
+    return payload
