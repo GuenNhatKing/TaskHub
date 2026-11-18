@@ -31,6 +31,6 @@ class UserResponse(BaseModel):
     )
 
 
-class UserChangeProfileRequets(BaseModel):
+class UserChangeProfileRequest(BaseModel):
     email: LowerEmail
     full_name: str
