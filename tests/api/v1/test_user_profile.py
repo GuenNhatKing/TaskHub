@@ -1,25 +1,27 @@
 from tests.api.v1.constants import LOGIN_URL, PROFILES_URL
 
 
-async def test_user_profile(api_client, active_user):
-    # Đăng nhập để lấy access_token
+async def _get_auth_headers(api_client, user_credentials: dict) -> dict:
     response = await api_client.post(
         LOGIN_URL,
         json={
-            "email": active_user["email"],
-            "password": active_user["password"],
+            "email": user_credentials["email"],
+            "password": user_credentials["password"],
         },
     )
-
     assert response.status_code == 200
-    data = response.json()
-    token = data["access_token"]
+    token = response.json()["access_token"]
     assert token
+    return {"Authorization": f"Bearer {token}"}
+
+
+async def test_user_profile(api_client, active_user):
+    headers = await _get_auth_headers(api_client, active_user)
 
     # Gửi request GET kèm JWT Token ở header
     response = await api_client.get(
         PROFILES_URL,
-        headers={"Authorization": f"Bearer {token}"},
+        headers=headers,
     )
 
     assert response.status_code == 200
@@ -40,3 +42,163 @@ async def test_user_profile_missing_token(api_client):
     response = await api_client.get(PROFILES_URL)
 
     assert response.status_code == 401
+
+
+async def test_patch_user_profile_partial_full_name(api_client, active_user):
+    """Chỉ cập nhật full_name, email được giữ nguyên"""
+    headers = await _get_auth_headers(api_client, active_user)
+    new_full_name = "Fullname Updated"
+
+    response = await api_client.patch(
+        PROFILES_URL,
+        headers=headers,
+        json={"full_name": new_full_name},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["full_name"] == new_full_name
+    assert data["email"] == active_user["email"]
+
+
+async def test_patch_user_profile_all_fields(api_client, active_user):
+    """Cập nhật cả email và full_name cùng lúc"""
+    headers = await _get_auth_headers(api_client, active_user)
+    payload = {
+        "email": "new.email@mail.com",
+        "full_name": "Fullname Updated",
+    }
+
+    response = await api_client.patch(
+        PROFILES_URL,
+        headers=headers,
+        json=payload,
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["email"] == payload["email"]
+    assert data["full_name"] == payload["full_name"]
+
+
+async def test_patch_user_profile_empty_json(api_client, active_user):
+    """Gửi JSON rỗng {} -> trả về 200 và giữ nguyên dữ liệu cũ"""
+    headers = await _get_auth_headers(api_client, active_user)
+
+    response = await api_client.patch(
+        PROFILES_URL,
+        headers=headers,
+        json={},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["full_name"] == active_user["full_name"]
+    assert data["email"] == active_user["email"]
+
+
+async def test_patch_user_profile_no_body(api_client, active_user):
+    """Không đính kèm body -> trả về 422"""
+    headers = await _get_auth_headers(api_client, active_user)
+
+    response = await api_client.patch(
+        PROFILES_URL,
+        headers=headers,
+    )
+
+    assert response.status_code == 422
+
+
+async def test_patch_user_profile_null_values_ignored(api_client, active_user):
+    """Gửi giá trị null -> Bị bỏ qua, không làm mất dữ liệu hiện tại"""
+    headers = await _get_auth_headers(api_client, active_user)
+
+    response = await api_client.patch(
+        PROFILES_URL,
+        headers=headers,
+        json={"email": None, "full_name": None},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["full_name"] == active_user["full_name"]
+    assert data["email"] == active_user["email"]
+
+
+async def test_patch_user_profile_invalid_email(api_client, active_user):
+    """Gửi email sai định dạng -> trả về 422"""
+    headers = await _get_auth_headers(api_client, active_user)
+
+    response = await api_client.patch(
+        PROFILES_URL,
+        headers=headers,
+        json={"email": "email-khong-hop-le"},
+    )
+
+    assert response.status_code == 422
+
+
+async def test_patch_user_profile_invalid_token(api_client):
+    """Token sai -> trả về 401"""
+    response = await api_client.patch(
+        PROFILES_URL,
+        headers={"Authorization": "Bearer token.khong.hop.le"},
+        json={"full_name": "Hacker"},
+    )
+
+    assert response.status_code == 401
+
+
+async def test_patch_user_profile_missing_token(api_client):
+    """Thiếu token -> trả về 401"""
+    response = await api_client.patch(
+        PROFILES_URL,
+        json={"full_name": "Hacker"},
+    )
+
+    assert response.status_code == 401
+
+
+async def test_patch_user_profile_duplicate_email(
+    api_client, active_user, inactive_user
+):
+    """Cập nhật email trùng với người dùng khác -> trả về 409"""
+    headers = await _get_auth_headers(api_client, active_user)
+
+    response = await api_client.patch(
+        PROFILES_URL,
+        headers=headers,
+        json={"email": inactive_user["email"]},
+    )
+
+    assert response.status_code == 409
+
+
+async def test_patch_user_profile_empty_full_name(api_client, active_user):
+    """Gửi full_name là chuỗi rỗng hoặc toàn khoảng trắng -> trả về 422"""
+    headers = await _get_auth_headers(api_client, active_user)
+
+    for invalid_name in ["", "   "]:
+        response = await api_client.patch(
+            PROFILES_URL,
+            headers=headers,
+            json={"full_name": invalid_name},
+        )
+        assert response.status_code == 422
+
+
+async def test_patch_user_profile_extra_fields_ignored(api_client, active_user):
+    """Gửi kèm trường lạ không có trong schema"""
+    headers = await _get_auth_headers(api_client, active_user)
+
+    response = await api_client.patch(
+        PROFILES_URL,
+        headers=headers,
+        json={"full_name": "Fullname Updated", "is_active": False, "hacker": True},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["full_name"] == "Fullname Updated"
+    assert data["is_active"] == True
+    assert "hacker" not in data

@@ -17,4 +17,4 @@ async def active_user(db_session):
     await db_session.commit()
     await db_session.refresh(user)
 
-    return {"email": user.email, "password": PASSWORD}
+    return {"full_name": user.full_name, "email": user.email, "password": PASSWORD}
