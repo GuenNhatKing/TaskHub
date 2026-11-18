@@ -18,6 +18,8 @@ from taskhub.repos.revoked_refresh_group import RevokedRefreshGroupRepository
 from taskhub.schemas.token import LogoutRequest, RefreshTokenRequest, TokenResponse
 from taskhub.schemas.user import UserLoginRequest
 
+DUMMY_PASSWORD_HASH = "$2b$12$2mvDGUTxyh8VyVKV9w67I.AM9ZDzyFUunuyvHFzb2OO2XSBvz5Qua"
+
 
 class AuthService:
     def __init__(self, db: AsyncSession):
@@ -49,18 +51,19 @@ class AuthService:
 
     async def authenticate_user(self, data: UserLoginRequest) -> TokenResponse:
         user = await self.user_repository.get_by_email(data.email)
-        if not user:
+
+        # Chọn hash thật nếu có user, ngược lại dùng dummy hash
+        hashed_password = user.hashed_password if user else DUMMY_PASSWORD_HASH
+
+        is_valid = await run_in_threadpool(
+            verify_password, data.password, hashed_password
+        )
+
+        if not user or not is_valid:
             raise InvalidCredentialException()
 
         if not user.is_active:
             raise InactiveUserException()
-
-        is_valid = await run_in_threadpool(
-            verify_password, data.password, user.hashed_password
-        )
-
-        if not is_valid:
-            raise InvalidCredentialException()
 
         refresh_group = uuid.uuid4()
 
