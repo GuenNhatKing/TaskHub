@@ -76,3 +76,36 @@ async def test_login_missing_password(api_client):
     )
 
     assert response.status_code == 422
+
+
+async def test_login_weak_password_only_letters(api_client, active_user):
+    response = await api_client.post(
+        LOGIN_URL,
+        json={
+            "email": active_user["email"],
+            "password": "onlyletterspassword",  # Mật khẩu yếu chỉ có chữ
+        },
+    )
+    assert response.status_code == 401
+
+
+async def test_login_weak_password_only_numbers(api_client, active_user):
+    response = await api_client.post(
+        LOGIN_URL,
+        json={
+            "email": active_user["email"],
+            "password": "1234567890",  # Mật khẩu yếu chỉ có số
+        },
+    )
+    assert response.status_code == 401
+
+
+async def test_login_password_too_long(api_client, active_user):
+    response = await api_client.post(
+        LOGIN_URL,
+        json={
+            "email": active_user["email"],
+            "password": "A" * 21,  # Mật khẩu 21 kí tự (> 20 kí tự)
+        },
+    )
+    assert response.status_code == 401

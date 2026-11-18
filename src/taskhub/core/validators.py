@@ -2,7 +2,9 @@ from typing import Annotated
 
 from pydantic import AfterValidator, EmailStr, StringConstraints
 
-from taskhub.core.constants import FULLNAME_LENGTH, PASSWORD_LENGTH
+from taskhub.core.constants import FULLNAME_LENGTH, PASSWORD_LENGTH, PASSWORD_MIN_LENGTH
+from taskhub.core.messages import ErrorMessage
+from taskhub.core.security import BCRYPT_MAX_BYTES
 
 ValidName = Annotated[
     str,
@@ -22,12 +24,26 @@ LowerEmail = Annotated[
 
 def check_password_complexity(value: str) -> str:
     if not any(c.isdigit() for c in value) or not any(c.isalpha() for c in value):
-        raise ValueError("Mật khẩu phải bao gồm cả chữ cái và chữ số")
+        raise ValueError(ErrorMessage.WEAK_PASSWORD)
+    return value
+
+
+def check_password_bytes_length(value: str) -> str:
+    if len(value.encode("utf-8")) > BCRYPT_MAX_BYTES:
+        raise ValueError(ErrorMessage.PASSWORD_TOO_LONG)
     return value
 
 
 ValidPassword = Annotated[
     str,
-    StringConstraints(min_length=1, max_length=PASSWORD_LENGTH),
+    StringConstraints(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_LENGTH),
+    AfterValidator(check_password_bytes_length),
     AfterValidator(check_password_complexity),
+]
+
+LoginPassword = Annotated[
+    str,
+    StringConstraints(
+        min_length=1
+    ),  # Min length = 1 chỉ để chặn trường hợp password rỗng
 ]

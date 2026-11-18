@@ -15,3 +15,5 @@ class ErrorMessage(str, Enum):
     USER_NOT_FOUND = "Người dùng không tồn tại"
     INVALID_CREDENTIAL = "Email hoặc mật khẩu không hợp lệ"
     INACTIVE_USER = "Tài khoản của bạn đã bị vô hiệu hóa"
+    WEAK_PASSWORD = "Mật khẩu phải bao gồm cả chữ cái và chữ số"
+    PASSWORD_TOO_LONG = "Mật khẩu dài quá độ dài quy định"

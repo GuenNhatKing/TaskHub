@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
-from taskhub.core.validators import LowerEmail, ValidName, ValidPassword
+from taskhub.core.validators import LoginPassword, LowerEmail, ValidName, ValidPassword
 from taskhub.models.user import ROLE
 
 
@@ -15,7 +15,7 @@ class UserRegisterRequest(BaseModel):
 
 class UserLoginRequest(BaseModel):
     email: LowerEmail
-    password: ValidPassword
+    password: LoginPassword
 
 
 class UserResponse(BaseModel):
