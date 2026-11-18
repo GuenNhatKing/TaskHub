@@ -1,6 +1,5 @@
 from enum import Enum
 
-
 PROJECT_NAME_LENGTH = 100
 DESC_LENGTH = 1000
 
