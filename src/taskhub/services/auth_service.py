@@ -6,6 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
+from taskhub.core.constants import DUMMY_PASSWORD_HASH
 from taskhub.core.security import (
     create_access_token,
     create_refresh_token,
@@ -17,8 +18,6 @@ from taskhub.repos import RevokedRefreshTokenRepository, UserRepository
 from taskhub.repos.revoked_refresh_group import RevokedRefreshGroupRepository
 from taskhub.schemas.token import LogoutRequest, RefreshTokenRequest, TokenResponse
 from taskhub.schemas.user import UserLoginRequest
-
-DUMMY_PASSWORD_HASH = "$2b$12$2mvDGUTxyh8VyVKV9w67I.AM9ZDzyFUunuyvHFzb2OO2XSBvz5Qua"
 
 
 class AuthService:

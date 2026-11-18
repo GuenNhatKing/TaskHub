@@ -1,3 +1,6 @@
+from enum import Enum
+
+
 PROJECT_NAME_LENGTH = 100
 DESC_LENGTH = 1000
 
@@ -10,3 +13,14 @@ WORKSPACE_NAME_LENGTH = 100
 
 PASSWORD_MIN_LENGTH = 8
 PASSWORD_LENGTH = 20
+
+BCRYPT_ROUNDS = 12
+BCRYPT_MAX_BYTES = 72
+
+
+class TokenType(str, Enum):
+    ACCESS = "access"
+    REFRESH = "refresh"
+
+
+DUMMY_PASSWORD_HASH = "$2b$12$2mvDGUTxyh8VyVKV9w67I.AM9ZDzyFUunuyvHFzb2OO2XSBvz5Qua"

@@ -7,14 +7,9 @@ from jwt.exceptions import InvalidTokenError
 from passlib.context import CryptContext
 
 from taskhub.core.config import settings
+from taskhub.core.constants import BCRYPT_ROUNDS, TokenType
 
-crypt_context = CryptContext(
-    schemes=["bcrypt"],
-    bcrypt__rounds=12,
-)
-
-
-BCRYPT_MAX_BYTES = 72
+crypt_context = CryptContext(schemes=["bcrypt"], bcrypt__rounds=BCRYPT_ROUNDS)
 
 
 def hash_password(password: str) -> str:
@@ -49,7 +44,7 @@ def _create_token(
         "aud": settings.JWT_AUDIENCE,
     }
 
-    if token_type == "refresh":
+    if token_type == TokenType.REFRESH:
         payload["group"] = str(group)
 
     return jwt.encode(
@@ -61,7 +56,7 @@ def _create_token(
 
 def _decode_token(token: str, token_type: str) -> dict:
     require = ["sub", "jti", "type", "iat", "exp", "iss", "aud"]
-    if token_type == "refresh":
+    if token_type == TokenType.REFRESH:
         require.append("group")
     payload = jwt.decode(
         token,
@@ -81,23 +76,23 @@ def _decode_token(token: str, token_type: str) -> dict:
 def create_access_token(user_id: str) -> str:
     return _create_token(
         user_id=user_id,
-        token_type="access",
+        token_type=TokenType.ACCESS,
         expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
 
 
 def decode_access_token(token: str) -> dict:
-    return _decode_token(token, token_type="access")
+    return _decode_token(token, token_type=TokenType.ACCESS)
 
 
 def create_refresh_token(user_id: str, group: uuid.UUID) -> str:
     return _create_token(
         user_id=user_id,
         group=group,
-        token_type="refresh",
+        token_type=TokenType.REFRESH,
         expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
     )
 
 
 def decode_refresh_token(token: str) -> dict:
-    return _decode_token(token, token_type="refresh")
+    return _decode_token(token, token_type=TokenType.REFRESH)
