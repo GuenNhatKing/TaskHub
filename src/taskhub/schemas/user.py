@@ -1,23 +1,26 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict
 
-from taskhub.models.user import FULLNAME_LENGTH, ROLE
+from taskhub.core.validators import LoginPassword, LowerEmail, ValidName, ValidPassword
+from taskhub.models.user import ROLE
 
-PASSWORD_LENGTH = 20
+
+class UserRegisterRequest(BaseModel):
+    email: LowerEmail
+    full_name: ValidName
+    password: ValidPassword
 
 
-# POST /users
-class UserCreate(BaseModel):
-    email: str = EmailStr
-    full_name: str = Field(max_length=FULLNAME_LENGTH)
-    password: str = Field(max_length=PASSWORD_LENGTH)
+class UserLoginRequest(BaseModel):
+    email: LowerEmail
+    password: LoginPassword
 
 
 class UserResponse(BaseModel):
     id: uuid.UUID
-    email: EmailStr
+    email: LowerEmail
     full_name: str
     created_at: datetime
     role: ROLE

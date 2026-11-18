@@ -10,10 +10,13 @@ requires-python = ">=3.14"
 dependencies = [
     "alembic>=1.20.1",
     "asyncpg>=0.32.0",
+    "bcrypt==4.0.1",
     "email-validator>=2.3.0",
     "fastapi[standard]>=0.115.0",
+    "passlib[bcrypt]==1.7.4",
     "psycopg[binary]>=3.3.8",
     "pydantic>=2.12.0",
+    "pyjwt>=2.15.1",
     "python-dotenv>=1.2.4",
     "sqlalchemy[asyncio]>=2.1.8",
 ]
@@ -27,3 +30,16 @@ build-backend = "uv_build"
 
 [tool.fastapi]
 entrypoint = "taskhub.main:app"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[dependency-groups]
+dev = [
+    "aiosqlite>=0.22.1",
+    "httpx>=0.28.1",
+    "pytest>=9.2.0",
+    "pytest-asyncio>=1.5.0",
+]
