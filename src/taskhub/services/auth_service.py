@@ -27,11 +27,25 @@ class AuthService:
         self.revoked_refresh_group_repository = RevokedRefreshGroupRepository(db)
 
     @staticmethod
-    def _create_token_response(user_id: str, refresh_group: uuid.UUID) -> TokenResponse:
+    def _create_token_response(
+        user_id: uuid.UUID, refresh_group: uuid.UUID
+    ) -> TokenResponse:
         return TokenResponse(
             access_token=create_access_token(user_id),
             refresh_token=create_refresh_token(user_id, refresh_group),
         )
+
+    async def _revoke_refresh_group(self, refresh_group: uuid.UUID):
+        revoked_token_group_dict = {
+            "id": refresh_group,
+            "revoked_at": datetime.now(UTC),
+        }
+
+        try:
+            await self.revoked_refresh_group_repository.create(revoked_token_group_dict)
+            await self.db.commit()
+        except IntegrityError:
+            await self.db.rollback()
 
     async def authenticate_user(self, data: UserLoginRequest) -> TokenResponse:
         user = await self.user_repository.get_by_email(data.email)
@@ -64,6 +78,22 @@ class AuthService:
         except InvalidTokenError:
             raise InvalidCredentialException("Refresh token không hợp lệ")
 
+        # Kiểm tra group đã bị revoke chưa
+        revoked_group = await self.revoked_refresh_group_repository.get_by_id(group)
+        if revoked_group is not None:
+            raise InvalidCredentialException("Refresh token không hợp lệ")
+
+        # Kiểm tra thông tin user
+        user_id = uuid.UUID(payload["sub"])
+
+        user = await self.user_repository.get_by_id(user_id)
+
+        if not user:
+            raise InvalidCredentialException()
+
+        if not user.is_active:
+            raise InactiveUserException()
+
         # Revoke token (không cần check, có lỗi db thì trả 401)
         revoked_token_dict = {
             "id": jti,
@@ -77,24 +107,12 @@ class AuthService:
             await self.db.commit()
         except IntegrityError:
             await self.db.rollback()
-            raise InvalidCredentialException("Refresh token không hợp lệ")
-
-        revoked_group = await self.revoked_refresh_group_repository.get_by_id(group)
-        if revoked_group is not None:
+            # Sử dụng token cũ -> có thể có ai đó đã đánh cắp token và refresh trước -> revoked toàn bộ group
+            await self._revoke_refresh_group(group)
             raise InvalidCredentialException("Refresh token không hợp lệ")
 
         # Cấp token mới
-        user_id = uuid.UUID(payload["sub"])
-
-        user = await self.user_repository.get_by_id(user_id)
-
-        if not user:
-            raise InvalidCredentialException()
-
-        if not user.is_active:
-            raise InactiveUserException()
-
-        return self._create_token_response(user.id, group)
+        return self._create_token_response(user_id, group)
 
     async def logout(
         self,
@@ -115,16 +133,12 @@ class AuthService:
             "expires_at": datetime.fromtimestamp(payload["exp"], UTC),
             "revoked_at": datetime.now(UTC),
         }
-        # Revoke refresh token group
-        revoked_token_group_dict = {
-            "id": group,
-            "revoked_at": datetime.fromtimestamp(payload["exp"], UTC),
-        }
 
         try:
             await self.revoked_refresh_token_repository.create(revoked_token_dict)
-            await self.revoked_refresh_group_repository.create(revoked_token_group_dict)
             await self.db.commit()
         except IntegrityError:
             await self.db.rollback()
             raise InvalidCredentialException("Refresh token không hợp lệ")
+
+        await self._revoke_refresh_group(group)
