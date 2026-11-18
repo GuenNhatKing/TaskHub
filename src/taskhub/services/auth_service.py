@@ -55,12 +55,9 @@ class AuthService:
         # Chọn hash thật nếu có user, ngược lại dùng dummy hash
         hashed_password = user.hashed_password if user else DUMMY_PASSWORD_HASH
 
-        try:
-            is_valid = await run_in_threadpool(
-                verify_password, data.password, hashed_password
-            )
-        except ValueError:
-            raise InvalidCredentialException()
+        is_valid = await run_in_threadpool(
+            verify_password, data.password, hashed_password
+        )
 
         if not user or not is_valid:
             raise InvalidCredentialException()

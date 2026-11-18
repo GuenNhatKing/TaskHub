@@ -44,6 +44,6 @@ ValidPassword = Annotated[
 LoginPassword = Annotated[
     str,
     StringConstraints(
-        min_length=1
+        min_length=1, max_length=PASSWORD_LENGTH
     ),  # Min length = 1 chỉ để chặn trường hợp password rỗng
 ]

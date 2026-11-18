@@ -7,8 +7,6 @@ from jwt.exceptions import InvalidTokenError
 from passlib.context import CryptContext
 
 from taskhub.core.config import settings
-from taskhub.core.constants import PASSWORD_LENGTH
-from taskhub.core.messages import ErrorMessage
 
 crypt_context = CryptContext(
     schemes=["bcrypt"],
@@ -19,15 +17,7 @@ crypt_context = CryptContext(
 BCRYPT_MAX_BYTES = 72
 
 
-def validate_password(password: str):
-    if len(password) > PASSWORD_LENGTH:
-        raise ValueError(ErrorMessage.PASSWORD_TOO_LONG)
-    if len(password.encode("utf-8")) > BCRYPT_MAX_BYTES:
-        raise ValueError(ErrorMessage.PASSWORD_TOO_LONG)
-
-
 def hash_password(password: str) -> str:
-    validate_password(password)
     return crypt_context.hash(password)
 
 
@@ -35,7 +25,6 @@ def verify_password(
     plain_password: str,
     hashed_password: str,
 ) -> bool:
-    validate_password(plain_password)
     return crypt_context.verify(
         plain_password,
         hashed_password,

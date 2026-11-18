@@ -108,4 +108,4 @@ async def test_login_password_too_long(api_client, active_user):
             "password": "A" * 21,  # Mật khẩu 21 kí tự (> 20 kí tự)
         },
     )
-    assert response.status_code == 401
+    assert response.status_code == 422
