@@ -145,6 +145,7 @@ class AuthService:
             await self.db.commit()
         except IntegrityError:
             await self.db.rollback()
+            await self._revoke_refresh_group(group)
             raise InvalidTokenException()
 
         await self._revoke_refresh_group(group)
