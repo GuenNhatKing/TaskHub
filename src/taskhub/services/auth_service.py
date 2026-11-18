@@ -86,7 +86,6 @@ class AuthService:
 
         # Kiểm tra thông tin user
         user_id = uuid.UUID(payload["sub"])
-
         user = await self.user_service.repository.get_by_id(user_id)
 
         if not user:
@@ -95,7 +94,16 @@ class AuthService:
         if not user.is_active:
             raise InactiveUserException()
 
-        # Revoke token (không cần check, có lỗi db thì trả 401)
+        # Kiểm tra token có được tạo trước thời điểm đổi mật khẩu không
+        issued_at = datetime.fromtimestamp(payload["iat"], UTC)
+        password_changed_at = user.password_changed_at
+        if password_changed_at.tzinfo is None:
+            password_changed_at = password_changed_at.replace(tzinfo=UTC)
+        if issued_at < password_changed_at:
+            await self._revoke_refresh_group(group)
+            raise InvalidTokenException()
+
+        # Revoke token hiện tại (Rotation)
         revoked_token_dict = {
             "id": jti,
             "group_id": group,
@@ -108,7 +116,6 @@ class AuthService:
             await self.db.commit()
         except IntegrityError:
             await self.db.rollback()
-            # Sử dụng token cũ -> có thể có ai đó đã đánh cắp token và refresh trước -> revoked toàn bộ group
             await self._revoke_refresh_group(group)
             raise InvalidTokenException()
 
@@ -165,7 +172,11 @@ class AuthService:
         )
 
         await self.user_service.repository.update(
-            user, {"hashed_password": new_hashed_password}
+            user,
+            {
+                "hashed_password": new_hashed_password,
+                "password_changed_at": datetime.now(UTC),
+            },
         )
         try:
             await self.db.commit()
