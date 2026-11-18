@@ -1,15 +1,16 @@
+import uuid
+
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
-from taskhub.core.security import hash_password
+from taskhub.core.security import decode_access_token, hash_password
 from taskhub.exceptions import (
     EmailExistedException,
-    UserNotFoundException,
 )
-from taskhub.models import User
+from taskhub.exceptions.auth_ex import InactiveUserException, InvalidTokenException
 from taskhub.repos import UserRepository
-from taskhub.schemas.user import UserRegisterRequest
+from taskhub.schemas.user import UserRegisterRequest, UserResponse
 
 
 class UserService:
@@ -17,10 +18,17 @@ class UserService:
         self.db = db
         self.repository = UserRepository(db)
 
-    async def get_by_email(self, email: str) -> User:
-        user = await self.repository.get_by_email(email)
+    async def get_user_info_by_token(self, token: str) -> UserResponse:
+        payload = decode_access_token(token)
+        user_id = uuid.UUID(payload["sub"])
+        user = await self.repository.get_by_id(user_id)
+
         if not user:
-            raise UserNotFoundException(email)
+            raise InvalidTokenException()
+
+        if not user.is_active:
+            raise InactiveUserException()
+
         return user
 
     async def create_user(self, data: UserRegisterRequest):
