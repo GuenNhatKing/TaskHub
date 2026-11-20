@@ -52,7 +52,7 @@ class AuthService:
             await self.db.rollback()
 
     async def authenticate_user(self, data: UserLoginRequest) -> TokenResponse:
-        user = await self.user_service.repository.get_by_email(data.email)
+        user = await self.user_service.user_repository.get_by_email(data.email)
 
         # Chọn hash thật nếu có user, ngược lại dùng dummy hash
         hashed_password = user.hashed_password if user else DUMMY_PASSWORD_HASH
@@ -87,7 +87,7 @@ class AuthService:
 
         # Kiểm tra thông tin user
         user_id = uuid.UUID(payload["sub"])
-        user = await self.user_service.repository.get_by_id(user_id)
+        user = await self.user_service.user_repository.get_by_id(user_id)
 
         if not user:
             raise InvalidTokenException()
@@ -173,7 +173,7 @@ class AuthService:
             hash_password, change_password_request.new_password
         )
 
-        user = await self.user_service.repository.update(
+        user = await self.user_service.user_repository.update(
             current_user,
             {
                 "hashed_password": new_hashed_password,

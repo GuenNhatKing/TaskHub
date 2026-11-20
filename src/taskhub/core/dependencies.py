@@ -38,7 +38,7 @@ async def get_current_user(
     token = credentials.credentials
     payload = decode_access_token(token)
     user_id = uuid.UUID(payload["sub"])
-    user = await user_services.repository.get_by_id(user_id)
+    user = await user_services.user_repository.get_by_id(user_id)
 
     if not user:
         raise InvalidTokenException()
