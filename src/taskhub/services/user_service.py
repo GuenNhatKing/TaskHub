@@ -4,6 +4,7 @@ from starlette.concurrency import run_in_threadpool
 
 from taskhub.core.security import hash_password
 from taskhub.exceptions import AlreadyExistedException
+from taskhub.exceptions.auth_ex import InactiveUserException, InvalidTokenException
 from taskhub.models.user import User
 from taskhub.repos import UserRepository
 from taskhub.schemas.user import (
@@ -16,6 +17,17 @@ class UserService:
     def __init__(self, db: AsyncSession):
         self.db = db
         self.user_repository = UserRepository(db)
+
+    async def get_user(self, user_id):
+        user = await self.user_repository.get_by_id(user_id)
+
+        if not user:
+            raise InvalidTokenException()
+
+        if not user.is_active:
+            raise InactiveUserException()
+
+        return user
 
     async def update_user(
         self,
