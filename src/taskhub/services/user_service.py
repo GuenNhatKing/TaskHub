@@ -3,9 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
 from taskhub.core.security import hash_password
-from taskhub.exceptions import (
-    EmailExistedException,
-)
+from taskhub.exceptions import AlreadyExistedException
 from taskhub.models.user import User
 from taskhub.repos import UserRepository
 from taskhub.schemas.user import (
@@ -35,7 +33,7 @@ class UserService:
         if email and email != current_user.email:
             existed_user = await self.user_repository.get_by_email(email)
             if existed_user:
-                raise EmailExistedException(email)
+                raise AlreadyExistedException(key=email)
 
         user = await self.user_repository.update(current_user, update_data)
         try:
@@ -43,7 +41,7 @@ class UserService:
             await self.db.refresh(user)
         except IntegrityError:
             await self.db.rollback()
-            raise EmailExistedException(email)
+            raise AlreadyExistedException(key=email)
 
         return user
 
@@ -59,7 +57,7 @@ class UserService:
         # Kiểm tra email đã tồn tại chưa
         existed_user = await self.user_repository.get_by_email(data.email)
         if existed_user:
-            raise EmailExistedException(data.email)
+            raise AlreadyExistedException(key=data.email)
 
         try:
             user = await self.user_repository.create(user_dict)
@@ -69,7 +67,7 @@ class UserService:
         except IntegrityError:
             # Dù đã kiểm tra trước đó, vẫn có khả năng race!!
             await self.db.rollback()
-            raise EmailExistedException(data.email)
+            raise AlreadyExistedException(key=data.email)
         except Exception:
             await self.db.rollback()
             raise
