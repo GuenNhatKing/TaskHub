@@ -17,7 +17,7 @@ from taskhub.schemas.user import (
 class UserService:
     def __init__(self, db: AsyncSession):
         self.db = db
-        self.repository = UserRepository(db)
+        self.user_repository = UserRepository(db)
 
     async def update_user(
         self,
@@ -33,11 +33,11 @@ class UserService:
         email = update_data.get("email")
         # Chỉ kiểm tra trùng nếu người dùng đổi sang một email khác email hiện tại
         if email and email != current_user.email:
-            existed_user = await self.repository.get_by_email(email)
+            existed_user = await self.user_repository.get_by_email(email)
             if existed_user:
                 raise EmailExistedException(email)
 
-        user = await self.repository.update(current_user, update_data)
+        user = await self.user_repository.update(current_user, update_data)
         try:
             await self.db.commit()
             await self.db.refresh(user)
@@ -57,12 +57,12 @@ class UserService:
         )
 
         # Kiểm tra email đã tồn tại chưa
-        existed_user = await self.repository.get_by_email(data.email)
+        existed_user = await self.user_repository.get_by_email(data.email)
         if existed_user:
             raise EmailExistedException(data.email)
 
         try:
-            user = await self.repository.create(user_dict)
+            user = await self.user_repository.create(user_dict)
             await self.db.commit()
             await self.db.refresh(user)
             return user
