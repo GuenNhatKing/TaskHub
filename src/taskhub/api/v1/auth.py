@@ -1,9 +1,8 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from taskhub.core.dependencies import get_auth_service, get_user_service
+from taskhub.core.dependencies import CurrentUser, get_auth_service, get_user_service
 from taskhub.schemas.token import LogoutRequest, RefreshTokenRequest, TokenResponse
 from taskhub.schemas.user import (
     ChangePasswordRequest,
@@ -13,8 +12,6 @@ from taskhub.schemas.user import (
 )
 from taskhub.services.auth_service import AuthService
 from taskhub.services.user_service import UserService
-
-security = HTTPBearer()
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -55,9 +52,8 @@ async def logout(
 
 @router.post("/change-password", response_model=None, status_code=status.HTTP_200_OK)
 async def change_password(
-    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
+    current_user: CurrentUser,
     change_password_request: ChangePasswordRequest,
     services: Annotated[AuthService, Depends(get_auth_service)],
 ):
-    token = credentials.credentials
-    await services.change_password(token, change_password_request)
+    await services.change_password(current_user, change_password_request)
