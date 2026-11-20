@@ -9,6 +9,7 @@ from taskhub.core.security import decode_access_token
 from taskhub.exceptions.auth_ex import InactiveUserException, InvalidTokenException
 from taskhub.models.user import User
 from taskhub.services import AuthService, UserService
+from taskhub.services.workspace_service import WorkspaceService
 
 from .session import AsyncSessionLocal
 
@@ -50,3 +51,9 @@ async def get_current_user(
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+def get_workspace_service(
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    return WorkspaceService(db=db)
