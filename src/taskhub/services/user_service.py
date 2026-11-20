@@ -22,7 +22,7 @@ class UserService:
         self.db = db
         self.repository = UserRepository(db)
 
-    async def _get_user(self, token: str):
+    async def get_user(self, token: str):
         payload = decode_access_token(token)
         user_id = uuid.UUID(payload["sub"])
         user = await self.repository.get_by_id(user_id)
@@ -36,13 +36,13 @@ class UserService:
         return user
 
     async def get_user_info_by_token(self, token: str) -> UserResponse:
-        return await self._get_user(token)
+        return await self.get_user(token)
 
     async def change_user_info_by_token(
         self, token: str, change_profile_request: UserChangeProfileRequest
     ):
 
-        user = await self._get_user(token)
+        user = await self.get_user(token)
 
         update_data = change_profile_request.model_dump(
             exclude_unset=True, exclude_none=True
