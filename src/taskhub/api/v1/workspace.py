@@ -1,3 +1,4 @@
+import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
@@ -21,12 +22,12 @@ async def create_workspace(
     create_workspace_request: WorkspaceCreateRequest,
     services: Annotated[WorkspaceService, Depends(get_workspace_service)],
 ):
-    pass
+    return services.create_new_workspace(current_user, create_workspace_request)
 
 
 @router.get("/{id}", response_model=WorkspaceResponse, status_code=status.HTTP_200_OK)
 async def get_workspace_by_id(
-    id: int,
+    workspace_id: uuid.UUID,
     current_user: CurrentUser,
     services: Annotated[WorkspaceService, Depends(get_workspace_service)],
 ):
@@ -39,17 +40,17 @@ async def get_workspace_by_id(
     status_code=status.HTTP_201_CREATED,
 )
 async def add_workspace_member(
-    id: int,
+    workspace_id: uuid.UUID,
     current_user: CurrentUser,
     add_member_request: WorkspaceAddMemberRequest,
     services: Annotated[WorkspaceService, Depends(get_workspace_service)],
 ):
-    pass
+    return services.add_workspace_member(workspace_id, current_user, add_member_request)
 
 
 @router.delete("/{id}/members/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remove_workspace_member(
-    id: int,
+    workspace_id: uuid.UUID,
     user_id: int,
     current_user: CurrentUser,
     services: Annotated[WorkspaceService, Depends(get_workspace_service)],
