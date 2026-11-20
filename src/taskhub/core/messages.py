@@ -3,7 +3,7 @@ from enum import Enum
 
 class ErrorCode(str, Enum):
     UNEXPECTED_ERROR = "UNEXPECTED_ERROR"
-    EMAIL_EXISTED = "EMAIL_EXISTED"
+    ALREADY_EXISTED = "ALREADY_EXISTED"
     NOT_FOUND = "NOT_FOUND"
     INVALID_CREDENTIAL = "INVALID_CREDENTIAL"
     INACTIVE_USER = "INACTIVE_USER"
@@ -13,7 +13,9 @@ class ErrorCode(str, Enum):
 
 class ErrorMessage(str, Enum):
     UNEXPECTED_ERROR = "Đã xảy ra lỗi ngoài dự kiến"
+    ALREADY_EXISTED = "Đối tượng đã được sử dụng"
     EMAIL_EXISTED = "Email đã được sử dụng"
+    WORKSPACE_EXISTED = "Workspace đã được sử dụng"
 
     NOT_FOUND = "Đối tượng không tồn tại"
     USER_NOT_FOUND = "Người dùng không tồn tại"
