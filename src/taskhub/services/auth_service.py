@@ -15,6 +15,7 @@ from taskhub.core.security import (
 )
 from taskhub.exceptions import InactiveUserException, InvalidCredentialException
 from taskhub.exceptions.auth_ex import InvalidTokenException, SamePasswordException
+from taskhub.models.user import User
 from taskhub.repos import RevokedRefreshTokenRepository
 from taskhub.repos.revoked_refresh_group import RevokedRefreshGroupRepository
 from taskhub.schemas.token import LogoutRequest, RefreshTokenRequest, TokenResponse
@@ -51,7 +52,7 @@ class AuthService:
             await self.db.rollback()
 
     async def authenticate_user(self, data: UserLoginRequest) -> TokenResponse:
-        user = await self.user_service.repository.get_by_email(data.email)
+        user = await self.user_service.user_repository.get_by_email(data.email)
 
         # Chọn hash thật nếu có user, ngược lại dùng dummy hash
         hashed_password = user.hashed_password if user else DUMMY_PASSWORD_HASH
@@ -86,7 +87,7 @@ class AuthService:
 
         # Kiểm tra thông tin user
         user_id = uuid.UUID(payload["sub"])
-        user = await self.user_service.repository.get_by_id(user_id)
+        user = await self.user_service.user_repository.get_by_id(user_id)
 
         if not user:
             raise InvalidTokenException()
@@ -151,13 +152,14 @@ class AuthService:
 
     async def change_password(
         self,
-        token: str,
+        current_user: User,
         change_password_request: ChangePasswordRequest,
     ):
-        user = await self.user_service._get_user(token)
         # Kiểm tra mật khẩu cũ có khớp không
         is_valid = await run_in_threadpool(
-            verify_password, change_password_request.old_password, user.hashed_password
+            verify_password,
+            change_password_request.old_password,
+            current_user.hashed_password,
         )
         if not is_valid:
             raise InvalidCredentialException()
@@ -171,8 +173,8 @@ class AuthService:
             hash_password, change_password_request.new_password
         )
 
-        await self.user_service.repository.update(
-            user,
+        user = await self.user_service.user_repository.update(
+            current_user,
             {
                 "hashed_password": new_hashed_password,
                 "password_changed_at": datetime.now(UTC),
