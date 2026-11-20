@@ -154,7 +154,7 @@ class AuthService:
         token: str,
         change_password_request: ChangePasswordRequest,
     ):
-        user = await self.user_service._get_user(token)
+        user = await self.user_service.get_user(token)
         # Kiểm tra mật khẩu cũ có khớp không
         is_valid = await run_in_threadpool(
             verify_password, change_password_request.old_password, user.hashed_password
