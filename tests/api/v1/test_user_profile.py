@@ -1,22 +1,9 @@
-from tests.api.v1.constants import LOGIN_URL, PROFILES_URL
-
-
-async def _get_auth_headers(api_client, user_credentials: dict) -> dict:
-    response = await api_client.post(
-        LOGIN_URL,
-        json={
-            "email": user_credentials["email"],
-            "password": user_credentials["password"],
-        },
-    )
-    assert response.status_code == 200
-    token = response.json()["access_token"]
-    assert token
-    return {"Authorization": f"Bearer {token}"}
+from tests.api.v1.constants import PROFILES_URL
+from tests.api.v1.get_auth_credentials import get_auth_headers
 
 
 async def test_user_profile(api_client, active_user):
-    headers = await _get_auth_headers(api_client, active_user)
+    headers = await get_auth_headers(api_client, active_user)
 
     # Gửi request GET kèm JWT Token ở header
     response = await api_client.get(
@@ -46,7 +33,7 @@ async def test_user_profile_missing_token(api_client):
 
 async def test_patch_user_profile_partial_full_name(api_client, active_user):
     """Chỉ cập nhật full_name, email được giữ nguyên"""
-    headers = await _get_auth_headers(api_client, active_user)
+    headers = await get_auth_headers(api_client, active_user)
     new_full_name = "Fullname Updated"
 
     response = await api_client.patch(
@@ -63,7 +50,7 @@ async def test_patch_user_profile_partial_full_name(api_client, active_user):
 
 async def test_patch_user_profile_all_fields(api_client, active_user):
     """Cập nhật cả email và full_name cùng lúc"""
-    headers = await _get_auth_headers(api_client, active_user)
+    headers = await get_auth_headers(api_client, active_user)
     payload = {
         "email": "new.email@mail.com",
         "full_name": "Fullname Updated",
@@ -83,7 +70,7 @@ async def test_patch_user_profile_all_fields(api_client, active_user):
 
 async def test_patch_user_profile_empty_json(api_client, active_user):
     """Gửi JSON rỗng {} -> trả về 200 và giữ nguyên dữ liệu cũ"""
-    headers = await _get_auth_headers(api_client, active_user)
+    headers = await get_auth_headers(api_client, active_user)
 
     response = await api_client.patch(
         PROFILES_URL,
@@ -99,7 +86,7 @@ async def test_patch_user_profile_empty_json(api_client, active_user):
 
 async def test_patch_user_profile_no_body(api_client, active_user):
     """Không đính kèm body -> trả về 422"""
-    headers = await _get_auth_headers(api_client, active_user)
+    headers = await get_auth_headers(api_client, active_user)
 
     response = await api_client.patch(
         PROFILES_URL,
@@ -111,7 +98,7 @@ async def test_patch_user_profile_no_body(api_client, active_user):
 
 async def test_patch_user_profile_null_values_ignored(api_client, active_user):
     """Gửi giá trị null -> Bị bỏ qua, không làm mất dữ liệu hiện tại"""
-    headers = await _get_auth_headers(api_client, active_user)
+    headers = await get_auth_headers(api_client, active_user)
 
     response = await api_client.patch(
         PROFILES_URL,
@@ -127,7 +114,7 @@ async def test_patch_user_profile_null_values_ignored(api_client, active_user):
 
 async def test_patch_user_profile_invalid_email(api_client, active_user):
     """Gửi email sai định dạng -> trả về 422"""
-    headers = await _get_auth_headers(api_client, active_user)
+    headers = await get_auth_headers(api_client, active_user)
 
     response = await api_client.patch(
         PROFILES_URL,
@@ -163,7 +150,7 @@ async def test_patch_user_profile_duplicate_email(
     api_client, active_user, inactive_user
 ):
     """Cập nhật email trùng với người dùng khác -> trả về 409"""
-    headers = await _get_auth_headers(api_client, active_user)
+    headers = await get_auth_headers(api_client, active_user)
 
     response = await api_client.patch(
         PROFILES_URL,
@@ -176,7 +163,7 @@ async def test_patch_user_profile_duplicate_email(
 
 async def test_patch_user_profile_empty_full_name(api_client, active_user):
     """Gửi full_name là chuỗi rỗng hoặc toàn khoảng trắng -> trả về 422"""
-    headers = await _get_auth_headers(api_client, active_user)
+    headers = await get_auth_headers(api_client, active_user)
 
     for invalid_name in ["", "   "]:
         response = await api_client.patch(
@@ -189,7 +176,7 @@ async def test_patch_user_profile_empty_full_name(api_client, active_user):
 
 async def test_patch_user_profile_extra_fields_ignored(api_client, active_user):
     """Gửi kèm trường lạ không có trong schema"""
-    headers = await _get_auth_headers(api_client, active_user)
+    headers = await get_auth_headers(api_client, active_user)
 
     response = await api_client.patch(
         PROFILES_URL,
