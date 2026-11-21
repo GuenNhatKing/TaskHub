@@ -24,6 +24,7 @@ class ErrorMessage(str, Enum):
     NOT_FOUND = "Đối tượng không tồn tại"
     USER_NOT_FOUND = "Người dùng không tồn tại"
     WORKSPACE_NOT_FOUND = "Workspace không tồn tại"
+    WORKSPACE_MEMBER_NOT_FOUND = "Người dùng không phải thành viên của workspace"
 
     INVALID_CREDENTIAL = "Email hoặc mật khẩu không hợp lệ"
     INACTIVE_USER = "Tài khoản của bạn đã bị vô hiệu hóa"
