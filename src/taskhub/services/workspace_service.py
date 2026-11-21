@@ -99,8 +99,7 @@ class WorkspaceService:
 
         if member_existed is not None:
             raise AlreadyExistedException(
-                key="id",
-                value=target_user.id,
+                key=str(target_user.id),
                 message=ErrorMessage.MEMBER_ALREADY_EXISTS,
             )
 
