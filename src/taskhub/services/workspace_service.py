@@ -121,3 +121,50 @@ class WorkspaceService:
             )
 
         return workspace_member
+
+    async def remove_workspace_member(
+        self,
+        workspace_id: uuid.UUID,
+        user_id: uuid.UUID,
+        current_user: User,
+        add_member_request: WorkspaceAddMemberRequest,
+    ):
+        # Chủ workspace mới được xóa thành viên
+        workspace = await self.get_workspace(workspace_id)
+        await self._ensure_owner(user_id=current_user.id, workspace_id=workspace.id)
+
+        target_user = await self.user_service.get_user(user_id)
+        member_existed = await self.workspace_member_repository.get_by_id(
+            (target_user.id, workspace.id)
+        )
+
+        if member_existed is None:
+            raise NotFoundException(
+                find_by="id",
+                value=target_user.id,
+                message=ErrorMessage.WORKSPACE_MEMBER_NOT_FOUND,
+            )
+
+        await self.workspace_member_repository.delete(member_existed)
+
+        try:
+            await self.db.commit()
+        except Exception:
+            await self.db.rollback()
+            raise
+
+    async def delete_workspace(
+        self,
+        workspace_id: uuid.UUID,
+        current_user: User,
+    ):
+        # Chỉ chủ sở hữu mới có quyền xóa
+        workspace = await self.get_workspace(workspace_id)
+        await self._ensure_owner(user_id=current_user.id, workspace_id=workspace.id)
+
+        await self.workspace_repository.delete(workspace)
+        try:
+            await self.db.commit()
+        except Exception:
+            await self.db.rollback()
+            raise

@@ -25,17 +25,27 @@ async def create_workspace(
     return services.create_new_workspace(current_user, create_workspace_request)
 
 
-@router.get("/{id}", response_model=WorkspaceResponse, status_code=status.HTTP_200_OK)
+@router.get(
+    "/{workspace_id}", response_model=WorkspaceResponse, status_code=status.HTTP_200_OK
+)
 async def get_workspace_by_id(
+    workspace_id: uuid.UUID,
+    services: Annotated[WorkspaceService, Depends(get_workspace_service)],
+):
+    return services.get_workspace(workspace_id)
+
+
+@router.delete("/{workspace_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_workspace_by_id(
     workspace_id: uuid.UUID,
     current_user: CurrentUser,
     services: Annotated[WorkspaceService, Depends(get_workspace_service)],
 ):
-    pass
+    return services.delete_workspace(workspace_id, current_user)
 
 
 @router.post(
-    "/{id}/members",
+    "/{workspace_id}/members",
     response_model=WorkspaceMemberResponse,
     status_code=status.HTTP_201_CREATED,
 )
@@ -48,14 +58,16 @@ async def add_workspace_member(
     return services.add_workspace_member(workspace_id, current_user, add_member_request)
 
 
-@router.delete("/{id}/members/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{workspace_id}/members/{user_id}", status_code=status.HTTP_204_NO_CONTENT
+)
 async def remove_workspace_member(
     workspace_id: uuid.UUID,
-    user_id: int,
+    user_id: uuid.UUID,
     current_user: CurrentUser,
     services: Annotated[WorkspaceService, Depends(get_workspace_service)],
 ):
-    pass
+    await services.remove_workspace_member(workspace_id, user_id, current_user)
 
 
 @router.post(
