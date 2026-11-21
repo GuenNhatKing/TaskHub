@@ -22,7 +22,7 @@ async def create_workspace(
     create_workspace_request: WorkspaceCreateRequest,
     services: Annotated[WorkspaceService, Depends(get_workspace_service)],
 ):
-    return services.create_new_workspace(current_user, create_workspace_request)
+    return await services.create_new_workspace(current_user, create_workspace_request)
 
 
 @router.get(
@@ -32,7 +32,7 @@ async def get_workspace_by_id(
     workspace_id: uuid.UUID,
     services: Annotated[WorkspaceService, Depends(get_workspace_service)],
 ):
-    return services.get_workspace(workspace_id)
+    return await services.get_workspace(workspace_id)
 
 
 @router.delete("/{workspace_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -41,7 +41,7 @@ async def delete_workspace_by_id(
     current_user: CurrentUser,
     services: Annotated[WorkspaceService, Depends(get_workspace_service)],
 ):
-    return services.delete_workspace(workspace_id, current_user)
+    return await services.delete_workspace(workspace_id, current_user)
 
 
 @router.post(
@@ -55,7 +55,9 @@ async def add_workspace_member(
     add_member_request: WorkspaceAddMemberRequest,
     services: Annotated[WorkspaceService, Depends(get_workspace_service)],
 ):
-    return services.add_workspace_member(workspace_id, current_user, add_member_request)
+    return await services.add_workspace_member(
+        workspace_id, current_user, add_member_request
+    )
 
 
 @router.delete(

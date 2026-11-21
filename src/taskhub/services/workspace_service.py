@@ -55,7 +55,7 @@ class WorkspaceService:
             workspace = await self.workspace_repository.create(workspace_dict)
             # Thêm người tạo vào danh sách thành viên
             await self._add_workspace_member(
-                current_user, workspace, role=WorkspaceMemberRole.OWNER
+                current_user.id, workspace.id, role=WorkspaceMemberRole.OWNER
             )
             await self.db.commit()
             await self.db.refresh(workspace)
@@ -127,7 +127,6 @@ class WorkspaceService:
         workspace_id: uuid.UUID,
         user_id: uuid.UUID,
         current_user: User,
-        add_member_request: WorkspaceAddMemberRequest,
     ):
         # Chủ workspace mới được xóa thành viên
         workspace = await self.get_workspace(workspace_id)

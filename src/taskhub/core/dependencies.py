@@ -47,5 +47,6 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
 
 def get_workspace_service(
     db: Annotated[AsyncSession, Depends(get_db)],
+    user_services: Annotated[UserService, Depends(get_user_service)],
 ):
-    return WorkspaceService(db=db)
+    return WorkspaceService(db=db, user_service=user_services)
