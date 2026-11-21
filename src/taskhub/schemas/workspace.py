@@ -11,6 +11,10 @@ class WorkspaceCreateRequest(BaseModel):
     name: ValidWorkspaceName
 
 
+class WorkspaceUpdateRequest(BaseModel):
+    name: ValidWorkspaceName | None = None
+
+
 class WorkspaceAddMemberRequest(BaseModel):
     user_id: uuid.UUID
     role: WorkspaceMemberRole

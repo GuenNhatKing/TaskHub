@@ -13,7 +13,11 @@ from taskhub.exceptions import (
 from taskhub.exceptions.bad_request_ex import BadRequestException
 from taskhub.models import User, Workspace, WorkspaceMember
 from taskhub.repos import WorkspaceMemberRepository, WorkspaceRepository
-from taskhub.schemas.workspace import WorkspaceAddMemberRequest, WorkspaceCreateRequest
+from taskhub.schemas.workspace import (
+    WorkspaceAddMemberRequest,
+    WorkspaceCreateRequest,
+    WorkspaceUpdateRequest,
+)
 from taskhub.services.user_service import UserService
 
 
@@ -57,6 +61,31 @@ class WorkspaceService:
             await self._add_workspace_member(
                 current_user.id, workspace.id, role=WorkspaceMemberRole.OWNER
             )
+            await self.db.commit()
+            await self.db.refresh(workspace)
+        except Exception:
+            await self.db.rollback()
+            raise
+
+        return workspace
+
+    async def update_workspace(
+        self,
+        workspace_id: uuid.UUID,
+        current_user: User,
+        update_request: WorkspaceUpdateRequest,
+    ):
+        # Chủ workspace mới được chỉnh sửa
+        workspace = await self.get_workspace(workspace_id)
+        await self._ensure_owner(user_id=current_user.id, workspace_id=workspace.id)
+
+        update_dict = update_request.model_dump(exclude_unset=True, exclude_none=True)
+        if not update_dict:
+            return workspace
+
+        workspace = await self.workspace_repository.update(workspace, update_dict)
+
+        try:
             await self.db.commit()
             await self.db.refresh(workspace)
         except Exception:

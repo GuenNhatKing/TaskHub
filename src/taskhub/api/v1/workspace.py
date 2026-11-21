@@ -10,6 +10,7 @@ from taskhub.schemas.workspace import (
     WorkspaceCreateRequest,
     WorkspaceMemberResponse,
     WorkspaceResponse,
+    WorkspaceUpdateRequest,
 )
 from taskhub.services.workspace_service import WorkspaceService
 
@@ -33,6 +34,20 @@ async def get_workspace_by_id(
     services: Annotated[WorkspaceService, Depends(get_workspace_service)],
 ):
     return await services.get_workspace(workspace_id)
+
+
+@router.patch(
+    "/{workspace_id}", response_model=WorkspaceResponse, status_code=status.HTTP_200_OK
+)
+async def update_workspace(
+    workspace_id: uuid.UUID,
+    current_user: CurrentUser,
+    create_workspace_request: WorkspaceUpdateRequest,
+    services: Annotated[WorkspaceService, Depends(get_workspace_service)],
+):
+    return await services.update_workspace(
+        workspace_id, current_user, create_workspace_request
+    )
 
 
 @router.delete("/{workspace_id}", status_code=status.HTTP_204_NO_CONTENT)
