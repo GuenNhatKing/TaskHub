@@ -1,5 +1,5 @@
-import datetime
 import uuid
+from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
@@ -27,6 +27,9 @@ class WorkspaceResponse(BaseModel):
 
 
 class WorkspaceMemberResponse(BaseModel):
+    workspace_id: uuid.UUID
+    user_id: uuid.UUID
+    role: WorkspaceMemberRole
     model_config = ConfigDict(
         from_attributes=True,
     )
