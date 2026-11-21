@@ -32,6 +32,11 @@ class User(Base):
     full_name: Mapped[str] = mapped_column(String(FULLNAME_LENGTH), nullable=False)
     # Dùng thuật toán bcrypt, độ dài đúng 60 ký tự
     hashed_password: Mapped[str] = mapped_column(String(60), nullable=False)
+    password_changed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
     role: Mapped[ROLE] = mapped_column(
         SqlAlchemyEnum(ROLE), default=ROLE.MEMBER, nullable=False
     )

@@ -39,3 +39,15 @@ class InvalidTokenException(BaseBusinessException):
             code=ErrorCode.INVALID_CREDENTIAL,
             status_code=status.HTTP_401_UNAUTHORIZED,
         )
+
+
+class SamePasswordException(BaseBusinessException):
+    def __init__(
+        self,
+        message: str = ErrorMessage.SAME_PASSWORD,
+    ):
+        super().__init__(
+            message=message,
+            code=ErrorCode.SAME_PASSWORD,
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
