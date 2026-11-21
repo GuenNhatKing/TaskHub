@@ -298,3 +298,147 @@ async def test_remove_workspace_member_forbidden(api_client, active_user, other_
         headers=other_headers,
     )
     assert response.status_code == 403
+
+
+async def test_update_workspace_success(api_client, active_user):
+    """Owner cập nhật tên workspace thành công -> trả về 200"""
+    headers = await get_auth_headers(api_client, active_user)
+    created_ws = await _create_sample_workspace(api_client, headers, "Old Name")
+    ws_id = created_ws["id"]
+
+    payload = {"name": "New Workspace Name"}
+    response = await api_client.patch(
+        f"{WORKSPACES_URL}/{ws_id}",
+        headers=headers,
+        json=payload,
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == ws_id
+    assert data["name"] == payload["name"]
+    assert data["owner_id"] == str(active_user["id"])
+
+
+async def test_update_workspace_empty_json_ignored(api_client, active_user):
+    """Gửi JSON rỗng {} -> trả về 200 và giữ nguyên dữ liệu cũ"""
+    headers = await get_auth_headers(api_client, active_user)
+    created_ws = await _create_sample_workspace(api_client, headers, "Original Name")
+    ws_id = created_ws["id"]
+
+    response = await api_client.patch(
+        f"{WORKSPACES_URL}/{ws_id}",
+        headers=headers,
+        json={},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["name"] == "Original Name"
+
+
+async def test_update_workspace_null_values_ignored(api_client, active_user):
+    """Gửi giá trị null -> giữ nguyên dữ liệu cũ"""
+    headers = await get_auth_headers(api_client, active_user)
+    created_ws = await _create_sample_workspace(api_client, headers, "Original Name")
+    ws_id = created_ws["id"]
+
+    response = await api_client.patch(
+        f"{WORKSPACES_URL}/{ws_id}",
+        headers=headers,
+        json={"name": None},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["name"] == "Original Name"
+
+
+async def test_update_workspace_no_body(api_client, active_user):
+    """Không đính kèm body -> trả về 422"""
+    headers = await get_auth_headers(api_client, active_user)
+    created_ws = await _create_sample_workspace(api_client, headers)
+
+    response = await api_client.patch(
+        f"{WORKSPACES_URL}/{created_ws['id']}",
+        headers=headers,
+    )
+    assert response.status_code == 422
+
+
+async def test_update_workspace_invalid_name(api_client, active_user):
+    """Gửi name là chuỗi rỗng hoặc toàn khoảng trắng -> trả về 422"""
+    headers = await get_auth_headers(api_client, active_user)
+    created_ws = await _create_sample_workspace(api_client, headers)
+    ws_id = created_ws["id"]
+
+    for invalid_name in ["", "   "]:
+        response = await api_client.patch(
+            f"{WORKSPACES_URL}/{ws_id}",
+            headers=headers,
+            json={"name": invalid_name},
+        )
+        assert response.status_code == 422
+
+
+async def test_update_workspace_missing_token(api_client, active_user):
+    """Thiếu token -> trả về 401"""
+    headers = await get_auth_headers(api_client, active_user)
+    created_ws = await _create_sample_workspace(api_client, headers)
+
+    response = await api_client.patch(
+        f"{WORKSPACES_URL}/{created_ws['id']}",
+        json={"name": "Hacker Name"},
+    )
+    assert response.status_code == 401
+
+
+async def test_update_workspace_invalid_token(api_client, active_user):
+    """Token không hợp lệ -> trả về 401"""
+    headers = await get_auth_headers(api_client, active_user)
+    created_ws = await _create_sample_workspace(api_client, headers)
+
+    response = await api_client.patch(
+        f"{WORKSPACES_URL}/{created_ws['id']}",
+        headers={"Authorization": "Bearer token.khong.hop.le"},
+        json={"name": "Hacker Name"},
+    )
+    assert response.status_code == 401
+
+
+async def test_update_workspace_forbidden_not_owner(
+    api_client, active_user, other_user
+):
+    """Người dùng khác (không phải owner) cố tình cập nhật workspace -> trả về 403"""
+    owner_headers = await get_auth_headers(api_client, active_user)
+    created_ws = await _create_sample_workspace(api_client, owner_headers)
+
+    other_headers = await get_auth_headers(api_client, other_user)
+    response = await api_client.patch(
+        f"{WORKSPACES_URL}/{created_ws['id']}",
+        headers=other_headers,
+        json={"name": "New Workspace Name"},
+    )
+    assert response.status_code == 403
+
+
+async def test_update_workspace_not_found(api_client, active_user):
+    """Cập nhật workspace không tồn tại -> trả về 404"""
+    headers = await get_auth_headers(api_client, active_user)
+
+    response = await api_client.patch(
+        f"{WORKSPACES_URL}/{uuid.uuid4()}",
+        headers=headers,
+        json={"name": "Ghost Workspace"},
+    )
+    assert response.status_code == 404
+
+
+async def test_update_workspace_invalid_uuid(api_client, active_user):
+    """ID trên URL không đúng định dạng UUID -> trả về 422"""
+    headers = await get_auth_headers(api_client, active_user)
+
+    response = await api_client.patch(
+        f"{WORKSPACES_URL}/not-a-valid-uuid",
+        headers=headers,
+        json={"name": "Valid Name"},
+    )
+    assert response.status_code == 422
