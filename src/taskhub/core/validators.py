@@ -7,6 +7,7 @@ from taskhub.core.constants import (
     FULLNAME_LENGTH,
     PASSWORD_LENGTH,
     PASSWORD_MIN_LENGTH,
+    WORKSPACE_NAME_LENGTH,
 )
 from taskhub.core.messages import ErrorMessage
 
@@ -50,4 +51,11 @@ LoginPassword = Annotated[
     StringConstraints(
         min_length=1, max_length=PASSWORD_LENGTH
     ),  # Min length = 1 chỉ để chặn trường hợp password rỗng
+]
+
+ValidWorkspaceName = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True, min_length=1, max_length=WORKSPACE_NAME_LENGTH
+    ),
 ]
