@@ -54,5 +54,8 @@ LoginPassword = Annotated[
 ]
 
 ValidWorkspaceName = Annotated[
-    str, StringConstraints(min_length=1, max_length=WORKSPACE_NAME_LENGTH)
+    str,
+    StringConstraints(
+        strip_whitespace=True, min_length=1, max_length=WORKSPACE_NAME_LENGTH
+    ),
 ]
