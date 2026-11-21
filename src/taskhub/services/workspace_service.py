@@ -36,7 +36,7 @@ class WorkspaceService:
 
     async def _ensure_owner(self, user_id: uuid.UUID, workspace_id: uuid.UUID) -> None:
         member = await self.workspace_member_repository.get_by_id(
-            (user_id, workspace_id)
+            (workspace_id, user_id)
         )
         if member is None or member.role != WorkspaceMemberRole.OWNER:
             raise PermissionDeniedException(
@@ -94,7 +94,7 @@ class WorkspaceService:
 
         target_user = await self.user_service.get_user(add_member_request.user_id)
         member_existed = await self.workspace_member_repository.get_by_id(
-            (target_user.id, workspace.id)
+            (workspace.id, target_user.id)
         )
 
         if member_existed is not None:
@@ -134,7 +134,7 @@ class WorkspaceService:
 
         target_user = await self.user_service.get_user(user_id)
         member_existed = await self.workspace_member_repository.get_by_id(
-            (target_user.id, workspace.id)
+            (workspace.id, target_user.id)
         )
 
         if member_existed is None:
@@ -160,7 +160,6 @@ class WorkspaceService:
         # Chỉ chủ sở hữu mới có quyền xóa
         workspace = await self.get_workspace(workspace_id)
         await self._ensure_owner(user_id=current_user.id, workspace_id=workspace.id)
-
         await self.workspace_repository.delete(workspace)
         try:
             await self.db.commit()
