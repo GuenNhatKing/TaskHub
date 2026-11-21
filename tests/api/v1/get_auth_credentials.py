@@ -17,7 +17,7 @@ async def get_auth_tokens(api_client, user_credentials: dict) -> dict:
 
 
 async def get_auth_headers(api_client, user_credentials: dict) -> dict:
-    token = get_auth_tokens(api_client, user_credentials)
+    token = await get_auth_tokens(api_client, user_credentials)
     access_token = token["access_token"]
     assert access_token
     return {"Authorization": f"Bearer {access_token}"}
