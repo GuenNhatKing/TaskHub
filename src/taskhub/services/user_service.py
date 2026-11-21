@@ -2,9 +2,11 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
+from taskhub.core.messages import ErrorMessage
 from taskhub.core.security import hash_password
 from taskhub.exceptions import AlreadyExistedException
 from taskhub.exceptions.auth_ex import InactiveUserException, InvalidTokenException
+from taskhub.exceptions.not_found_ex import NotFoundException
 from taskhub.models.user import User
 from taskhub.repos import UserRepository
 from taskhub.schemas.user import (
@@ -22,7 +24,11 @@ class UserService:
         user = await self.user_repository.get_by_id(user_id)
 
         if not user:
-            raise InvalidTokenException()
+            raise NotFoundException(
+                find_by="id",
+                value=user_id,
+                message=ErrorMessage.USER_NOT_FOUND,
+            )
 
         if not user.is_active:
             raise InactiveUserException()
