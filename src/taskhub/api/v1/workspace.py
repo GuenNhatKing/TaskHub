@@ -3,7 +3,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
 
-from taskhub.core.dependencies import CurrentUser, get_workspace_service
+from taskhub.core.dependencies import (
+    CurrentUser,
+    get_project_service,
+    get_workspace_service,
+)
+from taskhub.core.enums import ProjectStatus
 from taskhub.schemas.project import ProjectCreateRequest, ProjectResponse
 from taskhub.schemas.workspace import (
     WorkspaceAddMemberRequest,
@@ -12,6 +17,7 @@ from taskhub.schemas.workspace import (
     WorkspaceResponse,
     WorkspaceUpdateRequest,
 )
+from taskhub.services.project_service import ProjectService
 from taskhub.services.workspace_service import WorkspaceService
 
 router = APIRouter(prefix="/workspaces", tags=["Workspaces"])
@@ -88,14 +94,30 @@ async def remove_workspace_member(
 
 
 @router.post(
-    "/{id}/projects",
+    "/{workspace_id}/projects",
     response_model=ProjectResponse,
     status_code=status.HTTP_201_CREATED,
 )
 async def create_workspace_project(
-    id: int,
+    workspace_id: uuid.UUID,
     current_user: CurrentUser,
     create_project_request: ProjectCreateRequest,
-    services: Annotated[WorkspaceService, Depends(get_workspace_service)],
+    services: Annotated[ProjectService, Depends(get_project_service)],
 ):
-    pass
+    return await services.create_project(
+        workspace_id, current_user, create_project_request
+    )
+
+
+@router.get(
+    "/{workspace_id}/projects",
+    response_model=list[ProjectResponse],
+    status_code=status.HTTP_200_OK,
+)
+async def get_projects(
+    workspace_id: uuid.UUID,
+    current_user: CurrentUser,
+    services: Annotated[ProjectService, Depends(get_project_service)],
+    status: ProjectStatus | None = None,
+):
+    return await services.get_workspace_projects(workspace_id, current_user, status)

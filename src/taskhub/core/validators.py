@@ -4,9 +4,11 @@ from pydantic import AfterValidator, EmailStr, StringConstraints
 
 from taskhub.core.constants import (
     BCRYPT_MAX_BYTES,
+    DESC_LENGTH,
     FULLNAME_LENGTH,
     PASSWORD_LENGTH,
     PASSWORD_MIN_LENGTH,
+    PROJECT_NAME_LENGTH,
     WORKSPACE_NAME_LENGTH,
 )
 from taskhub.core.messages import ErrorMessage
@@ -58,4 +60,16 @@ ValidWorkspaceName = Annotated[
     StringConstraints(
         strip_whitespace=True, min_length=1, max_length=WORKSPACE_NAME_LENGTH
     ),
+]
+
+ValidProjectName = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True, min_length=1, max_length=PROJECT_NAME_LENGTH
+    ),
+]
+
+ValidDescription = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=0, max_length=DESC_LENGTH),
 ]
