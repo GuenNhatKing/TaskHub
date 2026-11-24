@@ -493,3 +493,15 @@ async def test_update_workspace_invalid_uuid(api_client, active_user):
         json={"name": "Valid Name"},
     )
     assert response.status_code == 422
+
+
+async def test_remove_workspace_member_self_bad_request(api_client, active_user):
+    """Owner tự xóa chính mình khỏi workspace -> trả về 400"""
+    headers = await get_auth_headers(api_client, active_user)
+    created_ws = await _create_sample_workspace(api_client, headers)
+
+    response = await api_client.delete(
+        f"{WORKSPACES_URL}/{created_ws['id']}/members/{active_user['id']}",
+        headers=headers,
+    )
+    assert response.status_code == 400
