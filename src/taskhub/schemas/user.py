@@ -29,3 +29,8 @@ class UserResponse(BaseModel):
     model_config = ConfigDict(
         from_attributes=True,
     )
+
+
+class UserChangeProfileRequest(BaseModel):
+    email: LowerEmail | None = None
+    full_name: ValidName | None = None
