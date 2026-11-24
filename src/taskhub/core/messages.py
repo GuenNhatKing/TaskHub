@@ -51,3 +51,8 @@ class ErrorMessage(str, Enum):
     WORKSPACE_EDITOR_REQUIRED = (
         "Chỉ chủ sở hữu hoặc người chỉnh sửa mới có quyền thực hiện thao tác này"
     )
+
+    REQUIRE_CURRENT_PASSWORD_TO_CHANGE_EMAIL = (
+        "Phải nhập mật khẩu hiện tại để thay đổi email"
+    )
+    INCORRECT_CURRENT_PASSWORD = "Mật khẩu hiện tại không chính xác"
