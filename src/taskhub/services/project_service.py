@@ -1,5 +1,6 @@
 import uuid
 
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from taskhub.core.enums import ProjectStatus, WorkspaceMemberRole
@@ -83,7 +84,7 @@ class ProjectService:
             project = await self.project_repository.create(project_dict)
             await self.db.commit()
             await self.db.refresh(project)
-        except Exception:
+        except SQLAlchemyError:
             await self.db.rollback()
             raise
 
@@ -136,7 +137,7 @@ class ProjectService:
         try:
             await self.db.commit()
             await self.db.refresh(project)
-        except Exception:
+        except SQLAlchemyError:
             await self.db.rollback()
             raise
 
@@ -162,7 +163,7 @@ class ProjectService:
         try:
             await self.db.commit()
             await self.db.refresh(project)
-        except Exception:
+        except SQLAlchemyError:
             await self.db.rollback()
             raise
 
@@ -188,7 +189,7 @@ class ProjectService:
         try:
             await self.db.commit()
             await self.db.refresh(project)
-        except Exception:
+        except SQLAlchemyError:
             await self.db.rollback()
             raise
 
@@ -208,6 +209,6 @@ class ProjectService:
 
         try:
             await self.db.commit()
-        except Exception:
+        except SQLAlchemyError:
             await self.db.rollback()
             raise

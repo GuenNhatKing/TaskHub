@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
@@ -20,25 +20,25 @@ from taskhub.exceptions.bad_request_ex import BadRequestException
 from taskhub.models.user import User
 from taskhub.repos import RevokedRefreshTokenRepository
 from taskhub.repos.revoked_refresh_group import RevokedRefreshGroupRepository
+from taskhub.repos.user import UserRepository
 from taskhub.schemas.token import LogoutRequest, RefreshTokenRequest, TokenResponse
 from taskhub.schemas.user import ChangePasswordRequest, UserLoginRequest
-from taskhub.services.user_service import UserService
 
 
 class AuthService:
-    def __init__(self, db: AsyncSession, user_service: UserService):
+    def __init__(self, db: AsyncSession):
         self.db = db
         self.revoked_refresh_token_repository = RevokedRefreshTokenRepository(db)
         self.revoked_refresh_group_repository = RevokedRefreshGroupRepository(db)
-        self.user_service = user_service
+        self.user_repository = UserRepository(db)
 
     @staticmethod
     def _create_token_response(
-        user_id: uuid.UUID, refresh_group: uuid.UUID
+        user_id: uuid.UUID, refresh_group: uuid.UUID, token_version: int
     ) -> TokenResponse:
         return TokenResponse(
-            access_token=create_access_token(user_id),
-            refresh_token=create_refresh_token(user_id, refresh_group),
+            access_token=create_access_token(user_id, token_version),
+            refresh_token=create_refresh_token(user_id, refresh_group, token_version),
         )
 
     async def _revoke_refresh_group(self, refresh_group: uuid.UUID):
@@ -54,7 +54,7 @@ class AuthService:
             await self.db.rollback()
 
     async def authenticate_user(self, data: UserLoginRequest) -> TokenResponse:
-        user = await self.user_service.user_repository.get_by_email(data.email)
+        user = await self.user_repository.get_by_email(data.email)
 
         # Chọn hash thật nếu có user, ngược lại dùng dummy hash
         hashed_password = user.hashed_password if user else DUMMY_PASSWORD_HASH
@@ -71,7 +71,7 @@ class AuthService:
 
         refresh_group = uuid.uuid4()
 
-        return self._create_token_response(user.id, refresh_group)
+        return self._create_token_response(user.id, refresh_group, user.token_version)
 
     async def refresh_tokens(
         self,
@@ -89,7 +89,7 @@ class AuthService:
 
         # Kiểm tra thông tin user
         user_id = uuid.UUID(payload["sub"])
-        user = await self.user_service.user_repository.get_by_id(user_id)
+        user = await self.user_repository.get_by_id(user_id)
 
         if not user:
             raise InvalidTokenException()
@@ -97,12 +97,8 @@ class AuthService:
         if not user.is_active:
             raise InactiveUserException()
 
-        # Kiểm tra token có được tạo trước thời điểm đổi mật khẩu không
-        issued_at = datetime.fromtimestamp(payload["iat"], UTC)
-        password_changed_at = user.password_changed_at
-        if password_changed_at.tzinfo is None:
-            password_changed_at = password_changed_at.replace(tzinfo=UTC)
-        if issued_at < password_changed_at:
+        # Kiểm tra phiên bản token có khớp với DB không
+        if payload["tv"] != user.token_version:
             await self._revoke_refresh_group(group)
             raise InvalidTokenException()
 
@@ -117,13 +113,14 @@ class AuthService:
         try:
             await self.revoked_refresh_token_repository.create(revoked_token_dict)
             await self.db.commit()
+            await self.db.refresh(user)
         except IntegrityError:
             await self.db.rollback()
             await self._revoke_refresh_group(group)
             raise InvalidTokenException()
 
         # Cấp token mới
-        return self._create_token_response(user_id, group)
+        return self._create_token_response(user_id, group, user.token_version)
 
     async def logout(
         self,
@@ -160,31 +157,34 @@ class AuthService:
         # Kiểm tra mật khẩu cũ có khớp không
         is_valid = await run_in_threadpool(
             verify_password,
-            change_password_request.old_password,
+            change_password_request.current_password,
             current_user.hashed_password,
         )
         if not is_valid:
             raise BadRequestException(ErrorMessage.INCORRECT_CURRENT_PASSWORD)
 
         # Tránh đặt mật khẩu mới trùng với mật khẩu cũ
-        if change_password_request.old_password == change_password_request.new_password:
+        if (
+            change_password_request.current_password
+            == change_password_request.new_password
+        ):
             raise SamePasswordException()
 
-        # Hash mật khẩu mới và cập nhật
+        # Hash mật khẩu mới, cập nhật thời gian đổi mật khẩu và tăng token_version
         new_hashed_password = await run_in_threadpool(
             hash_password, change_password_request.new_password
         )
 
-        user = await self.user_service.user_repository.update(
-            current_user,
-            {
-                "hashed_password": new_hashed_password,
-                "password_changed_at": datetime.now(UTC),
-            },
-        )
         try:
+            await self.user_repository.update(
+                current_user,
+                {
+                    "hashed_password": new_hashed_password,
+                    "password_changed_at": datetime.now(UTC),
+                    "token_version": current_user.token_version + 1,
+                },
+            )
             await self.db.commit()
-            await self.db.refresh(user)
-        except Exception:
+        except SQLAlchemyError:
             await self.db.rollback()
             raise

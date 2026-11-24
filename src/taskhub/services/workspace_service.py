@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from taskhub.core.enums import WorkspaceMemberRole
@@ -63,7 +63,7 @@ class WorkspaceService:
             )
             await self.db.commit()
             await self.db.refresh(workspace)
-        except Exception:
+        except SQLAlchemyError:
             await self.db.rollback()
             raise
 
@@ -88,7 +88,7 @@ class WorkspaceService:
         try:
             await self.db.commit()
             await self.db.refresh(workspace)
-        except Exception:
+        except SQLAlchemyError:
             await self.db.rollback()
             raise
 
@@ -176,7 +176,7 @@ class WorkspaceService:
 
         try:
             await self.db.commit()
-        except Exception:
+        except SQLAlchemyError:
             await self.db.rollback()
             raise
 
@@ -191,6 +191,6 @@ class WorkspaceService:
         await self.workspace_repository.delete(workspace)
         try:
             await self.db.commit()
-        except Exception:
+        except SQLAlchemyError:
             await self.db.rollback()
             raise

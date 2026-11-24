@@ -1,4 +1,4 @@
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
@@ -104,6 +104,6 @@ class UserService:
             # Dù đã kiểm tra trước đó, vẫn có khả năng race!!
             await self.db.rollback()
             raise AlreadyExistedException(key=data.email)
-        except Exception:
+        except SQLAlchemyError:
             await self.db.rollback()
             raise

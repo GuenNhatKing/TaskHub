@@ -39,5 +39,5 @@ class UserChangeProfileRequest(BaseRequest):
 
 
 class ChangePasswordRequest(BaseRequest):
-    old_password: LoginPassword
+    current_password: LoginPassword
     new_password: ValidPassword
