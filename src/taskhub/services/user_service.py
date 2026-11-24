@@ -3,9 +3,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
 from taskhub.core.messages import ErrorMessage
-from taskhub.core.security import hash_password
+from taskhub.core.security import hash_password, verify_password
 from taskhub.exceptions import AlreadyExistedException
-from taskhub.exceptions.auth_ex import InactiveUserException, InvalidTokenException
+from taskhub.exceptions.auth_ex import InactiveUserException
+from taskhub.exceptions.bad_request_ex import BadRequestException
 from taskhub.exceptions.not_found_ex import NotFoundException
 from taskhub.models.user import User
 from taskhub.repos import UserRepository
@@ -47,19 +48,36 @@ class UserService:
             return current_user
 
         email = update_data.get("email")
-        # Chỉ kiểm tra trùng nếu người dùng đổi sang một email khác email hiện tại
+
+        current_password = update_data.pop("current_password", None)
+        # Chỉ kiểm tra nếu người dùng đổi sang một email khác email hiện tại
         if email and email != current_user.email:
             existed_user = await self.user_repository.get_by_email(email)
             if existed_user:
                 raise AlreadyExistedException(key=email)
 
-        user = await self.user_repository.update(current_user, update_data)
+            # Kiểm tra mật khẩu hiện tại
+            if not current_password:
+                raise BadRequestException(
+                    ErrorMessage.REQUIRE_CURRENT_PASSWORD_TO_CHANGE_EMAIL
+                )
+            is_valid = await run_in_threadpool(
+                verify_password,
+                current_password,
+                current_user.hashed_password,
+            )
+            if not is_valid:
+                raise BadRequestException(ErrorMessage.INCORRECT_CURRENT_PASSWORD)
+
         try:
+            user = await self.user_repository.update(current_user, update_data)
             await self.db.commit()
             await self.db.refresh(user)
         except IntegrityError:
             await self.db.rollback()
-            raise AlreadyExistedException(key=email)
+            if update_data.get("email"):
+                raise AlreadyExistedException(key=update_data["email"])
+            raise
 
         return user
 

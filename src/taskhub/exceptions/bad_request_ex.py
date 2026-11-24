@@ -7,10 +7,10 @@ from taskhub.exceptions.base_business_ex import BaseBusinessException
 class BadRequestException(BaseBusinessException):
     def __init__(
         self,
-        message: str = ErrorMessage.PERMISSION_DENIED,
+        message: str = ErrorMessage.BAD_REQUEST,
     ):
         super().__init__(
             message=message,
-            code=ErrorCode.PERMISSION_DENIED,
+            code=ErrorCode.BAD_REQUEST,
             status_code=status.HTTP_400_BAD_REQUEST,
         )

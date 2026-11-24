@@ -5,17 +5,18 @@ from pydantic import BaseModel, ConfigDict
 
 from taskhub.core.enums import WorkspaceMemberRole
 from taskhub.core.validators import ValidWorkspaceName
+from taskhub.schemas.base import BaseRequest
 
 
-class WorkspaceCreateRequest(BaseModel):
+class WorkspaceCreateRequest(BaseRequest):
     name: ValidWorkspaceName
 
 
-class WorkspaceUpdateRequest(BaseModel):
+class WorkspaceUpdateRequest(BaseRequest):
     name: ValidWorkspaceName | None = None
 
 
-class WorkspaceAddMemberRequest(BaseModel):
+class WorkspaceAddMemberRequest(BaseRequest):
     user_id: uuid.UUID
     role: WorkspaceMemberRole
 

@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
 from taskhub.core.constants import DUMMY_PASSWORD_HASH
+from taskhub.core.messages import ErrorMessage
 from taskhub.core.security import (
     create_access_token,
     create_refresh_token,
@@ -15,6 +16,7 @@ from taskhub.core.security import (
 )
 from taskhub.exceptions import InactiveUserException, InvalidCredentialException
 from taskhub.exceptions.auth_ex import InvalidTokenException, SamePasswordException
+from taskhub.exceptions.bad_request_ex import BadRequestException
 from taskhub.models.user import User
 from taskhub.repos import RevokedRefreshTokenRepository
 from taskhub.repos.revoked_refresh_group import RevokedRefreshGroupRepository
@@ -162,7 +164,7 @@ class AuthService:
             current_user.hashed_password,
         )
         if not is_valid:
-            raise InvalidCredentialException()
+            raise BadRequestException(ErrorMessage.INCORRECT_CURRENT_PASSWORD)
 
         # Tránh đặt mật khẩu mới trùng với mật khẩu cũ
         if change_password_request.old_password == change_password_request.new_password:
