@@ -190,15 +190,14 @@ class WorkspaceService:
             error_message=ErrorMessage.WORKSPACE_OWNER_REQUIRED,
         )
 
-        target_user = await self.user_service.get_user(user_id)
         member_existed = await self.workspace_member_repository.get_by_id(
-            (workspace.id, target_user.id)
+            (workspace.id, user_id)
         )
 
         if member_existed is None:
             raise NotFoundException(
                 find_by="id",
-                value=target_user.id,
+                value=user_id,
                 message=ErrorMessage.WORKSPACE_MEMBER_NOT_FOUND,
             )
 
