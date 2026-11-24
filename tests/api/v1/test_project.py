@@ -638,7 +638,7 @@ async def test_archive_project_success(api_client, active_user):
 
 
 async def test_archive_project_already_archived(api_client, active_user):
-    """Archive một project đã ở trạng thái archived -> trả về 400 hoặc 409"""
+    """Archive một project đã ở trạng thái archived -> trả về 200"""
     headers = await get_auth_headers(api_client, active_user)
     ws = await _create_sample_workspace(api_client, headers)
     project = await _create_sample_project(api_client, headers, ws["id"])
@@ -726,7 +726,7 @@ async def test_unarchive_project_success(api_client, active_user):
 
 
 async def test_unarchive_project_already_active(api_client, active_user):
-    """Unarchive một project đang active -> trả về 400 hoặc 409"""
+    """Unarchive một project đang active -> trả về 200"""
     headers = await get_auth_headers(api_client, active_user)
     ws = await _create_sample_workspace(api_client, headers)
     project = await _create_sample_project(api_client, headers, ws["id"])
