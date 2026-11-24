@@ -212,7 +212,7 @@ async def test_patch_user_profile_empty_full_name(api_client, active_user):
         assert response.status_code == 422
 
 
-async def test_patch_user_profile_extra_fields_ignored(api_client, active_user):
+async def test_patch_user_profile_extra_fields_rejected(api_client, active_user):
     """Gửi kèm trường lạ không có trong schema"""
     headers = await get_auth_headers(api_client, active_user)
 
@@ -222,8 +222,4 @@ async def test_patch_user_profile_extra_fields_ignored(api_client, active_user):
         json={"full_name": "Fullname Updated", "is_active": False, "hacker": True},
     )
 
-    assert response.status_code == 200
-    data = response.json()
-    assert data["full_name"] == "Fullname Updated"
-    assert data["is_active"] == True
-    assert "hacker" not in data
+    assert response.status_code == 422
