@@ -31,6 +31,7 @@ def _create_token(
     user_id: str,
     token_type: str,
     expires_delta: timedelta,
+    token_version: int,
     group: uuid.UUID | None = None,
 ) -> str:
     now = datetime.now(UTC)
@@ -38,6 +39,7 @@ def _create_token(
     payload = {
         "sub": str(user_id),
         "jti": str(uuid4()),
+        "tv": token_version,
         "type": token_type,
         "iat": now,
         "exp": now + expires_delta,
@@ -56,7 +58,7 @@ def _create_token(
 
 
 def _decode_token(token: str, token_type: str) -> dict:
-    require = ["sub", "jti", "type", "iat", "exp", "iss", "aud"]
+    require = ["sub", "jti", "tv", "type", "iat", "exp", "iss", "aud"]
     if token_type == TokenType.REFRESH:
         require.append("group")
     payload = jwt.decode(
@@ -74,10 +76,11 @@ def _decode_token(token: str, token_type: str) -> dict:
     return payload
 
 
-def create_access_token(user_id: str) -> str:
+def create_access_token(user_id: str, token_version: int) -> str:
     return _create_token(
         user_id=user_id,
         token_type=TokenType.ACCESS,
+        token_version=token_version,
         expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
 
@@ -90,11 +93,12 @@ def decode_access_token(token: str) -> dict:
     return payload
 
 
-def create_refresh_token(user_id: str, group: uuid.UUID) -> str:
+def create_refresh_token(user_id: str, group: uuid.UUID, token_version: int) -> str:
     return _create_token(
         user_id=user_id,
         group=group,
         token_type=TokenType.REFRESH,
+        token_version=token_version,
         expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
     )
 

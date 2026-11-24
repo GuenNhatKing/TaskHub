@@ -6,6 +6,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from taskhub.core.security import decode_access_token
+from taskhub.exceptions.auth_ex import InvalidTokenException
 from taskhub.models.user import User
 from taskhub.services import AuthService, UserService
 from taskhub.services.project_service import ProjectService
@@ -40,6 +41,10 @@ async def get_current_user(
     payload = decode_access_token(token)
     user_id = uuid.UUID(payload["sub"])
     user = await user_services.get_user(user_id)
+
+    if payload["tv"] != user.token_version:
+        raise InvalidTokenException()
+
     return user
 
 
