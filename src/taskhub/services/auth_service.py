@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
@@ -172,17 +172,16 @@ class AuthService:
             hash_password, change_password_request.new_password
         )
 
-        user = await self.user_service.user_repository.update(
-            current_user,
-            {
-                "hashed_password": new_hashed_password,
-                "password_changed_at": datetime.now(UTC),
-                "token_version": current_user.token_version + 1,
-            },
-        )
         try:
+            await self.user_service.user_repository.update(
+                current_user,
+                {
+                    "hashed_password": new_hashed_password,
+                    "password_changed_at": datetime.now(UTC),
+                    "token_version": current_user.token_version + 1,
+                },
+            )
             await self.db.commit()
-            await self.db.refresh(user)
-        except Exception:
+        except SQLAlchemyError:
             await self.db.rollback()
             raise
