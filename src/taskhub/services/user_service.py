@@ -53,8 +53,8 @@ class UserService:
             if existed_user:
                 raise AlreadyExistedException(key=email)
 
-        user = await self.user_repository.update(current_user, update_data)
         try:
+            user = await self.user_repository.update(current_user, update_data)
             await self.db.commit()
             await self.db.refresh(user)
         except IntegrityError:
