@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from taskhub.core.enums import ProjectStatus
+from taskhub.core.enums import ProjectStatus, WorkspaceMemberRole
 from taskhub.core.messages import ErrorMessage
 from taskhub.exceptions import (
     NotFoundException,
@@ -46,8 +46,12 @@ class ProjectService:
         workspace = await self.workspace_service.get_workspace(
             workspace_id, current_user
         )
-        await self.workspace_service.ensure_editor_or_owner(
-            user_id=current_user.id, workspace_id=workspace.id
+
+        await self.workspace_service.ensure_workspace_role(
+            user_id=current_user.id,
+            workspace_id=workspace.id,
+            allowed_roles=[WorkspaceMemberRole.OWNER, WorkspaceMemberRole.EDITOR],
+            error_message=ErrorMessage.WORKSPACE_EDITOR_REQUIRED,
         )
 
         project_dict = {
@@ -76,8 +80,9 @@ class ProjectService:
             workspace_id, current_user
         )
         # Chỉ thành viên của workspace mới được xem danh sách project
-        await self.workspace_service.ensure_workspace_member(
-            user_id=current_user.id, workspace_id=workspace.id
+        await self.workspace_service.ensure_workspace_role(
+            user_id=current_user.id,
+            workspace_id=workspace.id,
         )
 
         return await self.project_repository.get_by_workspace_id(workspace.id, status)
@@ -88,8 +93,10 @@ class ProjectService:
         current_user: User,
     ) -> Project:
         project = await self.get_project(project_id)
-        await self.workspace_service.ensure_workspace_member(
-            user_id=current_user.id, workspace_id=project.workspace_id
+
+        await self.workspace_service.ensure_workspace_role(
+            user_id=current_user.id,
+            workspace_id=project.workspace_id,
         )
         return project
 
@@ -100,9 +107,14 @@ class ProjectService:
         update_request: ProjectUpdateRequest,
     ) -> Project:
         project = await self.get_project(project_id)
-        await self.workspace_service.ensure_editor_or_owner(
-            user_id=current_user.id, workspace_id=project.workspace_id
+
+        await self.workspace_service.ensure_workspace_role(
+            user_id=current_user.id,
+            workspace_id=project.workspace_id,
+            allowed_roles=[WorkspaceMemberRole.OWNER, WorkspaceMemberRole.EDITOR],
+            error_message=ErrorMessage.WORKSPACE_EDITOR_REQUIRED,
         )
+
         # Không cho chỉnh sửa thông tin nếu project đang ở trạng thái ARCHIVED
         self.ensure_project_active(project)
 
@@ -127,8 +139,12 @@ class ProjectService:
         current_user: User,
     ) -> Project:
         project = await self.get_project(project_id)
-        await self.workspace_service.ensure_editor_or_owner(
-            user_id=current_user.id, workspace_id=project.workspace_id
+
+        await self.workspace_service.ensure_workspace_role(
+            user_id=current_user.id,
+            workspace_id=project.workspace_id,
+            allowed_roles=[WorkspaceMemberRole.OWNER, WorkspaceMemberRole.EDITOR],
+            error_message=ErrorMessage.WORKSPACE_EDITOR_REQUIRED,
         )
 
         if project.status == ProjectStatus.ARCHIVED:
@@ -153,8 +169,12 @@ class ProjectService:
         current_user: User,
     ) -> Project:
         project = await self.get_project(project_id)
-        await self.workspace_service.ensure_editor_or_owner(
-            user_id=current_user.id, workspace_id=project.workspace_id
+
+        await self.workspace_service.ensure_workspace_role(
+            user_id=current_user.id,
+            workspace_id=project.workspace_id,
+            allowed_roles=[WorkspaceMemberRole.OWNER, WorkspaceMemberRole.EDITOR],
+            error_message=ErrorMessage.WORKSPACE_EDITOR_REQUIRED,
         )
 
         if project.status == ProjectStatus.ACTIVE:
@@ -179,8 +199,12 @@ class ProjectService:
         current_user: User,
     ) -> None:
         project = await self.get_project(project_id)
-        await self.workspace_service.ensure_editor_or_owner(
-            user_id=current_user.id, workspace_id=project.workspace_id
+
+        await self.workspace_service.ensure_workspace_role(
+            user_id=current_user.id,
+            workspace_id=project.workspace_id,
+            allowed_roles=[WorkspaceMemberRole.OWNER, WorkspaceMemberRole.EDITOR],
+            error_message=ErrorMessage.WORKSPACE_EDITOR_REQUIRED,
         )
 
         await self.project_repository.delete(project)
