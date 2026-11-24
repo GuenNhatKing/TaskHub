@@ -45,3 +45,9 @@ class ErrorMessage(str, Enum):
 
     BAD_REQUEST = "Yêu cầu không hợp lệ"
     CANNOT_ASSIGN_OWNER_ROLE = "Không thể gán người tạo cho thành viên"
+
+    PROJECT_NOT_FOUND = "Project không tồn tại"
+    PROJECT_ARCHIVED = "Project đã được lưu trữ, không thể thực hiện thao tác chỉnh sửa"
+    WORKSPACE_EDITOR_REQUIRED = (
+        "Chỉ chủ sở hữu hoặc người chỉnh sửa mới có quyền thực hiện thao tác này"
+    )

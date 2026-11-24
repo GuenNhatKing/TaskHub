@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from taskhub.core.security import decode_access_token
 from taskhub.models.user import User
 from taskhub.services import AuthService, UserService
+from taskhub.services.project_service import ProjectService
 from taskhub.services.workspace_service import WorkspaceService
 
 from .session import AsyncSessionLocal
@@ -50,3 +51,10 @@ def get_workspace_service(
     user_services: Annotated[UserService, Depends(get_user_service)],
 ):
     return WorkspaceService(db=db, user_service=user_services)
+
+
+def get_project_service(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    workspace_service: Annotated[WorkspaceService, Depends(get_workspace_service)],
+):
+    return ProjectService(db=db, workspace_service=workspace_service)
