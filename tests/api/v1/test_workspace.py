@@ -75,7 +75,10 @@ async def test_get_workspace_by_id_success(api_client, active_user):
     created_ws = await _create_sample_workspace(api_client, headers, "Design Team")
     ws_id = created_ws["id"]
 
-    response = await api_client.get(f"{WORKSPACES_URL}/{ws_id}")
+    response = await api_client.get(
+        f"{WORKSPACES_URL}/{ws_id}",
+        headers=headers,
+    )
 
     assert response.status_code == 200
     data = response.json()
@@ -85,17 +88,49 @@ async def test_get_workspace_by_id_success(api_client, active_user):
     assert "created_at" in data
 
 
-async def test_get_workspace_by_id_not_found(api_client):
+async def test_get_workspace_by_id_missing_token(api_client, active_user):
+    """Lấy thông tin workspace không có token -> trả về 401"""
+    headers = await get_auth_headers(api_client, active_user)
+    created_ws = await _create_sample_workspace(api_client, headers)
+
+    response = await api_client.get(f"{WORKSPACES_URL}/{created_ws['id']}")
+    assert response.status_code == 401
+
+
+async def test_get_workspace_by_id_forbidden_not_member(
+    api_client, active_user, other_user
+):
+    """Người dùng không thuộc workspace cố tình xem thông tin -> trả về 403"""
+    owner_headers = await get_auth_headers(api_client, active_user)
+    created_ws = await _create_sample_workspace(api_client, owner_headers)
+
+    other_headers = await get_auth_headers(api_client, other_user)
+    response = await api_client.get(
+        f"{WORKSPACES_URL}/{created_ws['id']}",
+        headers=other_headers,
+    )
+    assert response.status_code == 403
+
+
+async def test_get_workspace_by_id_not_found(api_client, active_user):
     """ID đúng định dạng UUID nhưng không tồn tại trong DB -> trả về 404"""
+    headers = await get_auth_headers(api_client, active_user)
     random_uuid = uuid.uuid4()
-    response = await api_client.get(f"{WORKSPACES_URL}/{random_uuid}")
+    response = await api_client.get(
+        f"{WORKSPACES_URL}/{random_uuid}",
+        headers=headers,
+    )
 
     assert response.status_code == 404
 
 
-async def test_get_workspace_by_id_invalid_uuid(api_client):
+async def test_get_workspace_by_id_invalid_uuid(api_client, active_user):
     """ID không phải định dạng UUID -> trả về 422"""
-    response = await api_client.get(f"{WORKSPACES_URL}/not-a-valid-uuid")
+    headers = await get_auth_headers(api_client, active_user)
+    response = await api_client.get(
+        f"{WORKSPACES_URL}/not-a-valid-uuid",
+        headers=headers,
+    )
 
     assert response.status_code == 422
 
@@ -113,7 +148,10 @@ async def test_delete_workspace_success(api_client, active_user):
     assert response.status_code == 204
 
     # Kiểm tra lại xem workspace đã thực sự bị xóa chưa
-    get_res = await api_client.get(f"{WORKSPACES_URL}/{ws_id}")
+    get_res = await api_client.get(
+        f"{WORKSPACES_URL}/{ws_id}",
+        headers=headers,
+    )
     assert get_res.status_code == 404
 
 
@@ -298,6 +336,19 @@ async def test_remove_workspace_member_forbidden(api_client, active_user, other_
         headers=other_headers,
     )
     assert response.status_code == 403
+
+
+async def test_remove_workspace_member_missing_token(
+    api_client, active_user, other_user
+):
+    """Xóa thành viên khỏi workspace không có token -> trả về 401"""
+    headers = await get_auth_headers(api_client, active_user)
+    created_ws = await _create_sample_workspace(api_client, headers)
+
+    response = await api_client.delete(
+        f"{WORKSPACES_URL}/{created_ws['id']}/members/{other_user['id']}",
+    )
+    assert response.status_code == 401
 
 
 async def test_update_workspace_success(api_client, active_user):
