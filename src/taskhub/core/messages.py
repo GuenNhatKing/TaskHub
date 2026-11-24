@@ -14,6 +14,9 @@ class ErrorCode(str, Enum):
 
 
 class ErrorMessage(str, Enum):
+    INTERNAL_SERVER_ERROR = (
+        "Đã có lỗi xảy ra từ hệ thống. Vui lòng thử lại sau hoặc liên hệ Admin."
+    )
     UNEXPECTED_ERROR = "Đã xảy ra lỗi ngoài dự kiến"
 
     ALREADY_EXISTED = "Đối tượng đã được sử dụng"
