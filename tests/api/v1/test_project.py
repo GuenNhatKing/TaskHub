@@ -780,3 +780,27 @@ async def test_unarchive_project_not_found(api_client, active_user):
         headers=headers,
     )
     assert response.status_code == 404
+
+
+async def test_create_project_only_name_success(api_client, active_user):
+    """Tạo project thành công khi chỉ truyền trường name (không có description) -> trả về 201"""
+    headers = await get_auth_headers(api_client, active_user)
+    ws = await _create_sample_workspace(api_client, headers)
+    ws_id = ws["id"]
+
+    payload = {"name": "Minimal Project"}
+
+    response = await api_client.post(
+        f"{WORKSPACES_URL}/{ws_id}/projects",
+        headers=headers,
+        json=payload,
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["name"] == payload["name"]
+    assert data["description"] is None
+    assert data["workspace_id"] == ws_id
+    assert "id" in data
+    assert "status" in data
+    assert "created_at" in data
