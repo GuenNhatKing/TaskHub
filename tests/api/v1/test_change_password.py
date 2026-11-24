@@ -49,7 +49,7 @@ async def test_change_password_wrong_old_password(api_client, active_user):
         },
         headers=headers,
     )
-    assert response.status_code == 401
+    assert response.status_code == 400
 
 
 async def test_change_password_same_as_old(api_client, active_user):

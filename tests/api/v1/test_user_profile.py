@@ -54,6 +54,7 @@ async def test_patch_user_profile_all_fields(api_client, active_user):
     payload = {
         "email": "new.email@mail.com",
         "full_name": "Fullname Updated",
+        "current_password": active_user["password"],
     }
 
     response = await api_client.patch(
@@ -66,6 +67,43 @@ async def test_patch_user_profile_all_fields(api_client, active_user):
     data = response.json()
     assert data["email"] == payload["email"]
     assert data["full_name"] == payload["full_name"]
+
+
+async def test_patch_user_profile_email_missing_current_password(
+    api_client, active_user
+):
+    """Đổi email nhưng không gửi kèm current_password -> trả về 400"""
+    headers = await get_auth_headers(api_client, active_user)
+    payload = {
+        "email": "new.email@mail.com",
+        "full_name": "Fullname Updated",
+    }
+
+    response = await api_client.patch(
+        PROFILES_URL,
+        headers=headers,
+        json=payload,
+    )
+
+    assert response.status_code == 400
+
+
+async def test_patch_user_profile_email_wrong_current_password(api_client, active_user):
+    """Đổi email nhưng nhập sai current_password -> trả về 400"""
+    headers = await get_auth_headers(api_client, active_user)
+    payload = {
+        "email": "new.email@mail.com",
+        "full_name": "Fullname Updated",
+        "current_password": "wrongPass@123",
+    }
+
+    response = await api_client.patch(
+        PROFILES_URL,
+        headers=headers,
+        json=payload,
+    )
+
+    assert response.status_code == 400
 
 
 async def test_patch_user_profile_empty_json(api_client, active_user):
