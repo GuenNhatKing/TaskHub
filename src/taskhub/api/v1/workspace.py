@@ -1,8 +1,9 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 
+from taskhub.core.constants import DEFAULT_PAGE, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE
 from taskhub.core.dependencies import (
     CurrentUser,
     get_project_service,
@@ -10,7 +11,11 @@ from taskhub.core.dependencies import (
 )
 from taskhub.core.enums import ProjectStatus
 from taskhub.core.messages import ErrorMessage
-from taskhub.schemas.project import ProjectCreateRequest, ProjectResponse
+from taskhub.schemas.project import (
+    ProjectCreateRequest,
+    ProjectListResponse,
+    ProjectResponse,
+)
 from taskhub.schemas.workspace import (
     WorkspaceAddMemberRequest,
     WorkspaceCreateRequest,
@@ -251,10 +256,23 @@ async def create_workspace_project(
         },
     },
 )
+@router.get(
+    "/{workspace_id}/projects",
+    response_model=ProjectListResponse,
+    status_code=status.HTTP_200_OK,
+)
 async def get_projects(
     workspace_id: uuid.UUID,
     current_user: CurrentUser,
     services: Annotated[ProjectService, Depends(get_project_service)],
     status: ProjectStatus | None = None,
-) -> list[ProjectResponse]:
-    return await services.get_workspace_projects(workspace_id, current_user, status)
+    page: Annotated[int, Query(ge=DEFAULT_PAGE)] = DEFAULT_PAGE,
+    page_size: Annotated[int, Query(ge=1, le=MAX_PAGE_SIZE)] = DEFAULT_PAGE_SIZE,
+):
+    return await services.get_workspace_projects(
+        workspace_id=workspace_id,
+        current_user=current_user,
+        status=status,
+        page=page,
+        page_size=page_size,
+    )
