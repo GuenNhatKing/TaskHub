@@ -28,7 +28,9 @@ class WorkspaceService:
         self.workspace_member_repository = WorkspaceMemberRepository(db)
         self.user_service = user_service
 
-    async def get_workspace(self, workspace_id: uuid.UUID) -> Workspace:
+    async def get_workspace(
+        self, workspace_id: uuid.UUID, current_user: User
+    ) -> Workspace:
         workspace = await self.workspace_repository.get_by_id(workspace_id)
         if workspace is None:
             raise NotFoundException(
@@ -36,9 +38,37 @@ class WorkspaceService:
                 value=workspace_id,
                 message=ErrorMessage.WORKSPACE_NOT_FOUND,
             )
+        await self.ensure_workspace_member(
+            user_id=current_user.id, workspace_id=workspace.id
+        )
         return workspace
 
-    async def _ensure_owner(self, user_id: uuid.UUID, workspace_id: uuid.UUID) -> None:
+    async def ensure_workspace_member(
+        self, user_id: uuid.UUID, workspace_id: uuid.UUID
+    ) -> None:
+        member = await self.workspace_member_repository.get_by_id(
+            (workspace_id, user_id)
+        )
+        if member is None:
+            raise PermissionDeniedException(
+                message=ErrorMessage.WORKSPACE_MEMBER_NOT_FOUND
+            )
+
+    async def ensure_editor_or_owner(
+        self, user_id: uuid.UUID, workspace_id: uuid.UUID
+    ) -> None:
+        member = await self.workspace_member_repository.get_by_id(
+            (workspace_id, user_id)
+        )
+        if member is None or member.role not in (
+            WorkspaceMemberRole.OWNER,
+            WorkspaceMemberRole.EDITOR,
+        ):
+            raise PermissionDeniedException(
+                message=ErrorMessage.WORKSPACE_EDITOR_REQUIRED
+            )
+
+    async def ensure_owner(self, user_id: uuid.UUID, workspace_id: uuid.UUID) -> None:
         member = await self.workspace_member_repository.get_by_id(
             (workspace_id, user_id)
         )
@@ -76,8 +106,8 @@ class WorkspaceService:
         update_request: WorkspaceUpdateRequest,
     ):
         # Chủ workspace mới được chỉnh sửa
-        workspace = await self.get_workspace(workspace_id)
-        await self._ensure_owner(user_id=current_user.id, workspace_id=workspace.id)
+        workspace = await self.get_workspace(workspace_id, current_user)
+        await self.ensure_owner(user_id=current_user.id, workspace_id=workspace.id)
 
         update_dict = update_request.model_dump(exclude_unset=True, exclude_none=True)
         if not update_dict:
@@ -118,8 +148,8 @@ class WorkspaceService:
             raise BadRequestException(message=ErrorMessage.CANNOT_ASSIGN_OWNER_ROLE)
 
         # Chủ workspace mới được thêm thành viên
-        workspace = await self.get_workspace(workspace_id)
-        await self._ensure_owner(user_id=current_user.id, workspace_id=workspace.id)
+        workspace = await self.get_workspace(workspace_id, current_user)
+        await self.ensure_owner(user_id=current_user.id, workspace_id=workspace.id)
 
         target_user = await self.user_service.get_user(add_member_request.user_id)
         member_existed = await self.workspace_member_repository.get_by_id(
@@ -157,8 +187,8 @@ class WorkspaceService:
         current_user: User,
     ):
         # Chủ workspace mới được xóa thành viên
-        workspace = await self.get_workspace(workspace_id)
-        await self._ensure_owner(user_id=current_user.id, workspace_id=workspace.id)
+        workspace = await self.get_workspace(workspace_id, current_user)
+        await self.ensure_owner(user_id=current_user.id, workspace_id=workspace.id)
 
         target_user = await self.user_service.get_user(user_id)
         member_existed = await self.workspace_member_repository.get_by_id(
@@ -186,8 +216,8 @@ class WorkspaceService:
         current_user: User,
     ):
         # Chỉ chủ sở hữu mới có quyền xóa
-        workspace = await self.get_workspace(workspace_id)
-        await self._ensure_owner(user_id=current_user.id, workspace_id=workspace.id)
+        workspace = await self.get_workspace(workspace_id, current_user)
+        await self.ensure_owner(user_id=current_user.id, workspace_id=workspace.id)
         await self.workspace_repository.delete(workspace)
         try:
             await self.db.commit()

@@ -3,11 +3,10 @@ import uuid
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from taskhub.core.enums import ProjectStatus, WorkspaceMemberRole
+from taskhub.core.enums import ProjectStatus
 from taskhub.core.messages import ErrorMessage
 from taskhub.exceptions import (
     NotFoundException,
-    PermissionDeniedException,
 )
 from taskhub.exceptions.bad_request_ex import BadRequestException
 from taskhub.models import Project, User
@@ -34,31 +33,6 @@ class ProjectService:
             )
         return project
 
-    async def ensure_workspace_member(
-        self, user_id: uuid.UUID, workspace_id: uuid.UUID
-    ) -> None:
-        member = await self.workspace_member_repository.get_by_id(
-            (workspace_id, user_id)
-        )
-        if member is None:
-            raise PermissionDeniedException(
-                message=ErrorMessage.WORKSPACE_MEMBER_NOT_FOUND
-            )
-
-    async def ensure_editor_or_owner(
-        self, user_id: uuid.UUID, workspace_id: uuid.UUID
-    ) -> None:
-        member = await self.workspace_member_repository.get_by_id(
-            (workspace_id, user_id)
-        )
-        if member is None or member.role not in (
-            WorkspaceMemberRole.OWNER,
-            WorkspaceMemberRole.EDITOR,
-        ):
-            raise PermissionDeniedException(
-                message=ErrorMessage.WORKSPACE_EDITOR_REQUIRED
-            )
-
     def ensure_project_active(self, project: Project) -> None:
         if project.status == ProjectStatus.ARCHIVED:
             raise BadRequestException(message=ErrorMessage.PROJECT_ARCHIVED)
@@ -69,8 +43,10 @@ class ProjectService:
         current_user: User,
         create_request: ProjectCreateRequest,
     ) -> Project:
-        workspace = await self.workspace_service.get_workspace(workspace_id)
-        await self.ensure_editor_or_owner(
+        workspace = await self.workspace_service.get_workspace(
+            workspace_id, current_user
+        )
+        await self.workspace_service.ensure_editor_or_owner(
             user_id=current_user.id, workspace_id=workspace.id
         )
 
@@ -96,9 +72,11 @@ class ProjectService:
         current_user: User,
         status: ProjectStatus | None = None,
     ) -> list[Project]:
-        workspace = await self.workspace_service.get_workspace(workspace_id)
+        workspace = await self.workspace_service.get_workspace(
+            workspace_id, current_user
+        )
         # Chỉ thành viên của workspace mới được xem danh sách project
-        await self.ensure_workspace_member(
+        await self.workspace_service.ensure_workspace_member(
             user_id=current_user.id, workspace_id=workspace.id
         )
 
@@ -110,7 +88,7 @@ class ProjectService:
         current_user: User,
     ) -> Project:
         project = await self.get_project(project_id)
-        await self.ensure_workspace_member(
+        await self.workspace_service.ensure_workspace_member(
             user_id=current_user.id, workspace_id=project.workspace_id
         )
         return project
@@ -122,7 +100,7 @@ class ProjectService:
         update_request: ProjectUpdateRequest,
     ) -> Project:
         project = await self.get_project(project_id)
-        await self.ensure_editor_or_owner(
+        await self.workspace_service.ensure_editor_or_owner(
             user_id=current_user.id, workspace_id=project.workspace_id
         )
         # Không cho chỉnh sửa thông tin nếu project đang ở trạng thái ARCHIVED
@@ -149,7 +127,7 @@ class ProjectService:
         current_user: User,
     ) -> Project:
         project = await self.get_project(project_id)
-        await self.ensure_editor_or_owner(
+        await self.workspace_service.ensure_editor_or_owner(
             user_id=current_user.id, workspace_id=project.workspace_id
         )
 
@@ -175,7 +153,7 @@ class ProjectService:
         current_user: User,
     ) -> Project:
         project = await self.get_project(project_id)
-        await self.ensure_editor_or_owner(
+        await self.workspace_service.ensure_editor_or_owner(
             user_id=current_user.id, workspace_id=project.workspace_id
         )
 
@@ -201,7 +179,7 @@ class ProjectService:
         current_user: User,
     ) -> None:
         project = await self.get_project(project_id)
-        await self.ensure_editor_or_owner(
+        await self.workspace_service.ensure_editor_or_owner(
             user_id=current_user.id, workspace_id=project.workspace_id
         )
 
