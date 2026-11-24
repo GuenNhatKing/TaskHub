@@ -20,17 +20,17 @@ from taskhub.exceptions.bad_request_ex import BadRequestException
 from taskhub.models.user import User
 from taskhub.repos import RevokedRefreshTokenRepository
 from taskhub.repos.revoked_refresh_group import RevokedRefreshGroupRepository
+from taskhub.repos.user import UserRepository
 from taskhub.schemas.token import LogoutRequest, RefreshTokenRequest, TokenResponse
 from taskhub.schemas.user import ChangePasswordRequest, UserLoginRequest
-from taskhub.services.user_service import UserService
 
 
 class AuthService:
-    def __init__(self, db: AsyncSession, user_service: UserService):
+    def __init__(self, db: AsyncSession):
         self.db = db
         self.revoked_refresh_token_repository = RevokedRefreshTokenRepository(db)
         self.revoked_refresh_group_repository = RevokedRefreshGroupRepository(db)
-        self.user_service = user_service
+        self.user_repository = UserRepository(db)
 
     @staticmethod
     def _create_token_response(
@@ -54,7 +54,7 @@ class AuthService:
             await self.db.rollback()
 
     async def authenticate_user(self, data: UserLoginRequest) -> TokenResponse:
-        user = await self.user_service.user_repository.get_by_email(data.email)
+        user = await self.user_repository.get_by_email(data.email)
 
         # Chọn hash thật nếu có user, ngược lại dùng dummy hash
         hashed_password = user.hashed_password if user else DUMMY_PASSWORD_HASH
@@ -89,7 +89,7 @@ class AuthService:
 
         # Kiểm tra thông tin user
         user_id = uuid.UUID(payload["sub"])
-        user = await self.user_service.user_repository.get_by_id(user_id)
+        user = await self.user_repository.get_by_id(user_id)
 
         if not user:
             raise InvalidTokenException()
@@ -173,7 +173,7 @@ class AuthService:
         )
 
         try:
-            await self.user_service.user_repository.update(
+            await self.user_repository.update(
                 current_user,
                 {
                     "hashed_password": new_hashed_password,

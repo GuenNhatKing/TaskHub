@@ -28,9 +28,8 @@ def get_user_service(db: Annotated[AsyncSession, Depends(get_db)]) -> UserServic
 
 def get_auth_service(
     db: Annotated[AsyncSession, Depends(get_db)],
-    user_services: Annotated[UserService, Depends(get_user_service)],
 ):
-    return AuthService(db=db, user_service=user_services)
+    return AuthService(db=db)
 
 
 async def get_current_user(
