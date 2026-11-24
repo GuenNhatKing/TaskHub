@@ -1,12 +1,16 @@
+from .already_existed_ex import AlreadyExistedException
 from .auth_ex import InactiveUserException, InvalidCredentialException
+from .bad_request_ex import BadRequestException
 from .base_business_ex import BaseBusinessException
-from .email_existed_ex import EmailExistedException
 from .not_found_ex import NotFoundException
+from .permission_denied_ex import PermissionDeniedException
 
 __all__ = [
+    "AlreadyExistedException",
+    "BadRequestException",
     "BaseBusinessException",
-    "EmailExistedException",
     "InactiveUserException",
     "InvalidCredentialException",
     "NotFoundException",
+    "PermissionDeniedException",
 ]

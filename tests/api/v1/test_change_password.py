@@ -1,37 +1,9 @@
 from tests.api.v1.constants import CHANGE_PASSWORD_URL, LOGIN_URL, REFRESH_URL
-
-
-async def _get_auth_tokens(api_client, user_credentials: dict) -> dict:
-    response = await api_client.post(
-        LOGIN_URL,
-        json={
-            "email": user_credentials["email"],
-            "password": user_credentials["password"],
-        },
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert data["access_token"]
-    assert data["refresh_token"]
-    return data
-
-
-async def _get_auth_headers(api_client, user_credentials: dict) -> dict:
-    response = await api_client.post(
-        LOGIN_URL,
-        json={
-            "email": user_credentials["email"],
-            "password": user_credentials["password"],
-        },
-    )
-    assert response.status_code == 200
-    token = response.json()["access_token"]
-    assert token
-    return {"Authorization": f"Bearer {token}"}
+from tests.api.v1.get_auth_credentials import get_auth_headers, get_auth_tokens
 
 
 async def test_change_password_success(api_client, active_user):
-    headers = await _get_auth_headers(api_client, active_user)
+    headers = await get_auth_headers(api_client, active_user)
     new_password = "StrongPassword@123"
 
     response = await api_client.post(
@@ -67,7 +39,7 @@ async def test_change_password_success(api_client, active_user):
 
 
 async def test_change_password_wrong_old_password(api_client, active_user):
-    headers = await _get_auth_headers(api_client, active_user)
+    headers = await get_auth_headers(api_client, active_user)
 
     response = await api_client.post(
         CHANGE_PASSWORD_URL,
@@ -81,7 +53,7 @@ async def test_change_password_wrong_old_password(api_client, active_user):
 
 
 async def test_change_password_same_as_old(api_client, active_user):
-    headers = await _get_auth_headers(api_client, active_user)
+    headers = await get_auth_headers(api_client, active_user)
 
     response = await api_client.post(
         CHANGE_PASSWORD_URL,
@@ -95,7 +67,7 @@ async def test_change_password_same_as_old(api_client, active_user):
 
 
 async def test_change_password_weak_new_password(api_client, active_user):
-    headers = await _get_auth_headers(api_client, active_user)
+    headers = await get_auth_headers(api_client, active_user)
 
     response = await api_client.post(
         CHANGE_PASSWORD_URL,
@@ -121,7 +93,7 @@ async def test_change_password_unauthenticated(api_client):
 
 async def test_refresh_token_after_change_password(api_client, active_user):
     # Đăng nhập để lấy access_token và refresh_token ban đầu
-    tokens = await _get_auth_tokens(api_client, active_user)
+    tokens = await get_auth_tokens(api_client, active_user)
     headers = {"Authorization": f"Bearer {tokens['access_token']}"}
     refresh_token = tokens["refresh_token"]
 
