@@ -39,7 +39,7 @@ router = APIRouter(prefix="/workspaces", tags=["Workspaces"])
         status.HTTP_409_CONFLICT: {
             "description": ErrorMessage.WORKSPACE_EXISTED.value,
         },
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
             "description": ErrorMessage.BAD_REQUEST.value,
         },
     },
@@ -61,7 +61,7 @@ async def create_workspace(
         status.HTTP_404_NOT_FOUND: {
             "description": ErrorMessage.WORKSPACE_NOT_FOUND.value,
         },
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
             "description": ErrorMessage.BAD_REQUEST.value,
         },
     },
@@ -91,7 +91,7 @@ async def get_workspace_by_id(
         status.HTTP_409_CONFLICT: {
             "description": ErrorMessage.WORKSPACE_EXISTED.value,
         },
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
             "description": ErrorMessage.BAD_REQUEST.value,
         },
     },
@@ -121,7 +121,7 @@ async def update_workspace(
         status.HTTP_404_NOT_FOUND: {
             "description": ErrorMessage.WORKSPACE_NOT_FOUND.value,
         },
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
             "description": ErrorMessage.BAD_REQUEST.value,
         },
     },
@@ -155,7 +155,7 @@ async def delete_workspace_by_id(
         status.HTTP_409_CONFLICT: {
             "description": ErrorMessage.MEMBER_ALREADY_EXISTS.value,
         },
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
             "description": ErrorMessage.BAD_REQUEST.value,
         },
     },
@@ -185,7 +185,7 @@ async def add_workspace_member(
         status.HTTP_404_NOT_FOUND: {
             "description": f"{ErrorMessage.WORKSPACE_NOT_FOUND.value} / {ErrorMessage.WORKSPACE_MEMBER_NOT_FOUND.value}",
         },
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
             "description": ErrorMessage.BAD_REQUEST.value,
         },
     },
@@ -214,7 +214,7 @@ async def remove_workspace_member(
         status.HTTP_404_NOT_FOUND: {
             "description": ErrorMessage.WORKSPACE_NOT_FOUND.value,
         },
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
             "description": ErrorMessage.BAD_REQUEST.value,
         },
     },
@@ -245,7 +245,7 @@ async def create_workspace_project(
         status.HTTP_404_NOT_FOUND: {
             "description": ErrorMessage.WORKSPACE_NOT_FOUND.value,
         },
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
             "description": ErrorMessage.BAD_REQUEST.value,
         },
     },

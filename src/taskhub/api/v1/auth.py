@@ -26,7 +26,7 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
         status.HTTP_409_CONFLICT: {
             "description": ErrorMessage.EMAIL_EXISTED.value,
         },
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
             "description": ErrorMessage.BAD_REQUEST.value,
         },
     },
@@ -50,7 +50,7 @@ async def create_user(
         status.HTTP_403_FORBIDDEN: {
             "description": ErrorMessage.INACTIVE_USER.value,
         },
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
             "description": ErrorMessage.BAD_REQUEST.value,
         },
     },
@@ -74,7 +74,7 @@ async def login(
         status.HTTP_403_FORBIDDEN: {
             "description": ErrorMessage.INACTIVE_USER.value,
         },
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
             "description": ErrorMessage.BAD_REQUEST.value,
         },
     },
@@ -95,7 +95,7 @@ async def refresh(
         status.HTTP_401_UNAUTHORIZED: {
             "description": ErrorMessage.INVALID_REFRESH_TOKEN.value,
         },
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
             "description": ErrorMessage.BAD_REQUEST.value,
         },
     },
@@ -122,7 +122,7 @@ async def logout(
         status.HTTP_403_FORBIDDEN: {
             "description": ErrorMessage.INACTIVE_USER.value,
         },
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
             "description": ErrorMessage.BAD_REQUEST.value,
         },
     },

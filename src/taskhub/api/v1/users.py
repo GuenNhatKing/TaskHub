@@ -49,7 +49,7 @@ async def get_user_info(current_user: CurrentUser) -> UserResponse:
         status.HTTP_409_CONFLICT: {
             "description": ErrorMessage.EMAIL_EXISTED.value,
         },
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
             "description": ErrorMessage.BAD_REQUEST.value,
         },
     },

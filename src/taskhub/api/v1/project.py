@@ -29,7 +29,7 @@ router = APIRouter(prefix="/projects", tags=["Projects"])
         status.HTTP_404_NOT_FOUND: {
             "description": ErrorMessage.PROJECT_NOT_FOUND.value,
         },
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
             "description": ErrorMessage.BAD_REQUEST.value,
         },
     },
@@ -60,7 +60,7 @@ async def get_project(
         status.HTTP_404_NOT_FOUND: {
             "description": ErrorMessage.PROJECT_NOT_FOUND.value,
         },
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
             "description": ErrorMessage.BAD_REQUEST.value,
         },
     },
@@ -88,7 +88,7 @@ async def update_project(
         status.HTTP_404_NOT_FOUND: {
             "description": ErrorMessage.PROJECT_NOT_FOUND.value,
         },
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
             "description": ErrorMessage.BAD_REQUEST.value,
         },
     },
@@ -116,7 +116,7 @@ async def delete_project(
         status.HTTP_404_NOT_FOUND: {
             "description": ErrorMessage.PROJECT_NOT_FOUND.value,
         },
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
             "description": ErrorMessage.BAD_REQUEST.value,
         },
     },
@@ -144,7 +144,7 @@ async def archive_project(
         status.HTTP_404_NOT_FOUND: {
             "description": ErrorMessage.PROJECT_NOT_FOUND.value,
         },
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
             "description": ErrorMessage.BAD_REQUEST.value,
         },
     },
