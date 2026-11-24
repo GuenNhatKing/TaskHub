@@ -178,9 +178,11 @@ async def test_get_projects_success(api_client, active_user):
 
     assert response.status_code == 200
     data = response.json()
-    assert isinstance(data, list)
-    assert len(data) == 2
-    assert {item["id"] for item in data} == {p1["id"], p2["id"]}
+    assert isinstance(data["items"], list)
+    assert len(data["items"]) == 2
+    assert data["total"] == 2
+    assert data["page"] == 1
+    assert {item["id"] for item in data["items"]} == {p1["id"], p2["id"]}
 
 
 async def test_get_projects_empty(api_client, active_user):
@@ -194,7 +196,10 @@ async def test_get_projects_empty(api_client, active_user):
     )
 
     assert response.status_code == 200
-    assert response.json() == []
+    data = response.json()
+    assert data["items"] == []
+    assert data["total"] == 0
+    assert data["total_pages"] == 0
 
 
 async def test_get_projects_filter_by_status(api_client, active_user):
@@ -211,7 +216,7 @@ async def test_get_projects_filter_by_status(api_client, active_user):
         params={"status": ProjectStatus.ACTIVE.value},
     )
     assert res_active.status_code == 200
-    assert len(res_active.json()) == 1
+    assert len(res_active.json()["items"]) == 1
 
     res_archived = await api_client.get(
         f"{WORKSPACES_URL}/{ws_id}/projects",
@@ -219,7 +224,7 @@ async def test_get_projects_filter_by_status(api_client, active_user):
         params={"status": ProjectStatus.ARCHIVED.value},
     )
     assert res_archived.status_code == 200
-    assert res_archived.json() == []
+    assert res_archived.json()["items"] == []
 
 
 async def test_get_projects_invalid_status_param(api_client, active_user):
@@ -258,7 +263,7 @@ async def test_get_projects_viewer_allowed(api_client, active_user, other_user):
     )
 
     assert response.status_code == 200
-    assert len(response.json()) == 1
+    assert len(response.json()["items"]) == 1
 
 
 async def test_get_projects_missing_token(api_client, active_user):
@@ -633,7 +638,7 @@ async def test_archive_project_success(api_client, active_user):
 
 
 async def test_archive_project_already_archived(api_client, active_user):
-    """Archive một project đã ở trạng thái archived -> trả về 400 hoặc 409"""
+    """Archive một project đã ở trạng thái archived -> trả về 200"""
     headers = await get_auth_headers(api_client, active_user)
     ws = await _create_sample_workspace(api_client, headers)
     project = await _create_sample_project(api_client, headers, ws["id"])
@@ -721,7 +726,7 @@ async def test_unarchive_project_success(api_client, active_user):
 
 
 async def test_unarchive_project_already_active(api_client, active_user):
-    """Unarchive một project đang active -> trả về 400 hoặc 409"""
+    """Unarchive một project đang active -> trả về 200"""
     headers = await get_auth_headers(api_client, active_user)
     ws = await _create_sample_workspace(api_client, headers)
     project = await _create_sample_project(api_client, headers, ws["id"])
@@ -780,3 +785,27 @@ async def test_unarchive_project_not_found(api_client, active_user):
         headers=headers,
     )
     assert response.status_code == 404
+
+
+async def test_create_project_only_name_success(api_client, active_user):
+    """Tạo project thành công khi chỉ truyền trường name (không có description) -> trả về 201"""
+    headers = await get_auth_headers(api_client, active_user)
+    ws = await _create_sample_workspace(api_client, headers)
+    ws_id = ws["id"]
+
+    payload = {"name": "Minimal Project"}
+
+    response = await api_client.post(
+        f"{WORKSPACES_URL}/{ws_id}/projects",
+        headers=headers,
+        json=payload,
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["name"] == payload["name"]
+    assert data["description"] is None
+    assert data["workspace_id"] == ws_id
+    assert "id" in data
+    assert "status" in data
+    assert "created_at" in data

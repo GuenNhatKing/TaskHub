@@ -22,10 +22,18 @@ class ProjectResponse(BaseModel):
     id: uuid.UUID
     workspace_id: uuid.UUID
     name: str
-    description: str
+    description: str | None
     status: ProjectStatus
     created_at: datetime
 
     model_config = ConfigDict(
         from_attributes=True,
     )
+
+
+class ProjectListResponse(BaseModel):
+    items: list[ProjectResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int

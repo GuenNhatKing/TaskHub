@@ -3,6 +3,7 @@ import uuid
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from taskhub.core.constants import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 from taskhub.core.enums import ProjectStatus, WorkspaceMemberRole
 from taskhub.core.messages import ErrorMessage
 from taskhub.exceptions import (
@@ -10,6 +11,7 @@ from taskhub.exceptions import (
 )
 from taskhub.exceptions.bad_request_ex import BadRequestException
 from taskhub.models import Project, User
+from taskhub.repos.base import Page
 from taskhub.repos.project import ProjectRepository
 from taskhub.repos.workspace_member import WorkspaceMemberRepository
 from taskhub.schemas.project import ProjectCreateRequest, ProjectUpdateRequest
@@ -75,17 +77,20 @@ class ProjectService:
         workspace_id: uuid.UUID,
         current_user: User,
         status: ProjectStatus | None = None,
-    ) -> list[Project]:
+        page: int = DEFAULT_PAGE,
+        page_size: int = DEFAULT_PAGE_SIZE,
+    ) -> Page[Project]:
+        # get_workspace đã kiểm tra luôn quyền thành viên của current_user
         workspace = await self.workspace_service.get_workspace(
             workspace_id, current_user
         )
-        # Chỉ thành viên của workspace mới được xem danh sách project
-        await self.workspace_service.ensure_workspace_role(
-            user_id=current_user.id,
-            workspace_id=workspace.id,
-        )
 
-        return await self.project_repository.get_by_workspace_id(workspace.id, status)
+        return await self.project_repository.get_by_workspace_id(
+            workspace_id=workspace.id,
+            status=status,
+            page=page,
+            page_size=page_size,
+        )
 
     async def get_project_detail(
         self,
