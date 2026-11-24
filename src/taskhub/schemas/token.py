@@ -2,6 +2,8 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+from taskhub.schemas.base import BaseRequest
+
 
 class TokenResponse(BaseModel):
     access_token: str
@@ -9,9 +11,9 @@ class TokenResponse(BaseModel):
     token_type: Literal["bearer"] = "bearer"
 
 
-class RefreshTokenRequest(BaseModel):
+class RefreshTokenRequest(BaseRequest):
     refresh_token: str
 
 
-class LogoutRequest(BaseModel):
+class LogoutRequest(BaseRequest):
     refresh_token: str

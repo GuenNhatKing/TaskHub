@@ -5,14 +5,15 @@ from pydantic import BaseModel, ConfigDict
 
 from taskhub.core.enums import ProjectStatus
 from taskhub.core.validators import ValidDescription, ValidProjectName
+from taskhub.schemas.base import BaseRequest
 
 
-class ProjectCreateRequest(BaseModel):
+class ProjectCreateRequest(BaseRequest):
     name: ValidProjectName
     description: ValidDescription | None = None
 
 
-class ProjectUpdateRequest(BaseModel):
+class ProjectUpdateRequest(BaseRequest):
     name: ValidProjectName | None = None
     description: ValidDescription | None = None
 

@@ -5,15 +5,16 @@ from pydantic import BaseModel, ConfigDict
 
 from taskhub.core.validators import LoginPassword, LowerEmail, ValidName, ValidPassword
 from taskhub.models.user import ROLE
+from taskhub.schemas.base import BaseRequest
 
 
-class UserRegisterRequest(BaseModel):
+class UserRegisterRequest(BaseRequest):
     email: LowerEmail
     full_name: ValidName
     password: ValidPassword
 
 
-class UserLoginRequest(BaseModel):
+class UserLoginRequest(BaseRequest):
     email: LowerEmail
     password: LoginPassword
 
@@ -31,12 +32,12 @@ class UserResponse(BaseModel):
     )
 
 
-class UserChangeProfileRequest(BaseModel):
+class UserChangeProfileRequest(BaseRequest):
     email: LowerEmail | None = None
     full_name: ValidName | None = None
-    current_password: ValidPassword | None = None
+    current_password: LoginPassword | None = None
 
 
-class ChangePasswordRequest(BaseModel):
+class ChangePasswordRequest(BaseRequest):
     old_password: LoginPassword
     new_password: ValidPassword
