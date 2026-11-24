@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from taskhub.core.security import decode_access_token
 from taskhub.exceptions.auth_ex import InvalidTokenException
+from taskhub.exceptions.not_found_ex import NotFoundException
 from taskhub.models.user import User
 from taskhub.services import AuthService, UserService
 from taskhub.services.project_service import ProjectService
@@ -39,7 +40,13 @@ async def get_current_user(
     token = credentials.credentials
     payload = decode_access_token(token)
     user_id = uuid.UUID(payload["sub"])
-    user = await user_services.get_user(user_id)
+
+    try:
+        user = await user_services.get_user(user_id)
+    except NotFoundException as exc:
+        # Bắt NotFoundException → đổi thành InvalidTokenException (401).
+        # User bị khóa → giữ nguyên InactiveUserException (403).
+        raise InvalidTokenException() from exc
 
     if payload["tv"] != user.token_version:
         raise InvalidTokenException()
