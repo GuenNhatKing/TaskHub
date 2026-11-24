@@ -181,6 +181,9 @@ class WorkspaceService:
         user_id: uuid.UUID,
         current_user: User,
     ):
+        # Không cho phép tự xóa chính mình khỏi workspace
+        if user_id == current_user.id:
+            raise BadRequestException(message=ErrorMessage.CANNOT_REMOVE_SELF)
         # Chủ workspace mới được xóa thành viên
         workspace = await self.get_workspace(workspace_id, current_user)
         await self.ensure_workspace_role(

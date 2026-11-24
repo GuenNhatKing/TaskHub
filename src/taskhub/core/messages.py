@@ -59,3 +59,4 @@ class ErrorMessage(str, Enum):
         "Phải nhập mật khẩu hiện tại để thay đổi email"
     )
     INCORRECT_CURRENT_PASSWORD = "Mật khẩu hiện tại không chính xác"
+    CANNOT_REMOVE_SELF = "Không thể tự xóa chính bản thân"
