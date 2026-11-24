@@ -67,10 +67,11 @@ async def create_workspace(
     },
 )
 async def get_workspace_by_id(
+    current_user: CurrentUser,
     workspace_id: uuid.UUID,
     services: Annotated[WorkspaceService, Depends(get_workspace_service)],
 ) -> WorkspaceResponse:
-    return await services.get_workspace(workspace_id)
+    return await services.get_workspace(workspace_id, current_user)
 
 
 @router.patch(
@@ -99,11 +100,11 @@ async def get_workspace_by_id(
 async def update_workspace(
     workspace_id: uuid.UUID,
     current_user: CurrentUser,
-    create_workspace_request: WorkspaceUpdateRequest,
+    update_workspace_request: WorkspaceUpdateRequest,
     services: Annotated[WorkspaceService, Depends(get_workspace_service)],
 ) -> WorkspaceResponse:
     return await services.update_workspace(
-        workspace_id, current_user, create_workspace_request
+        workspace_id, current_user, update_workspace_request
     )
 
 

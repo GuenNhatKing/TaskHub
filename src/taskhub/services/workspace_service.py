@@ -28,7 +28,9 @@ class WorkspaceService:
         self.workspace_member_repository = WorkspaceMemberRepository(db)
         self.user_service = user_service
 
-    async def get_workspace(self, workspace_id: uuid.UUID) -> Workspace:
+    async def get_workspace(
+        self, workspace_id: uuid.UUID, current_user: User
+    ) -> Workspace:
         workspace = await self.workspace_repository.get_by_id(workspace_id)
         if workspace is None:
             raise NotFoundException(
@@ -36,16 +38,29 @@ class WorkspaceService:
                 value=workspace_id,
                 message=ErrorMessage.WORKSPACE_NOT_FOUND,
             )
+        await self.ensure_workspace_role(
+            user_id=current_user.id,
+            workspace_id=workspace.id,
+        )
         return workspace
 
-    async def _ensure_owner(self, user_id: uuid.UUID, workspace_id: uuid.UUID) -> None:
+    async def ensure_workspace_role(
+        self,
+        user_id: uuid.UUID,
+        workspace_id: uuid.UUID,
+        allowed_roles: list[WorkspaceMemberRole] | None = None,
+        error_message: ErrorMessage = ErrorMessage.WORKSPACE_MEMBER_NOT_FOUND,
+    ) -> WorkspaceMember:
         member = await self.workspace_member_repository.get_by_id(
             (workspace_id, user_id)
         )
-        if member is None or member.role != WorkspaceMemberRole.OWNER:
-            raise PermissionDeniedException(
-                message=ErrorMessage.WORKSPACE_OWNER_REQUIRED
-            )
+        if member is None:
+            raise PermissionDeniedException(message=error_message)
+
+        if allowed_roles is not None and member.role not in allowed_roles:
+            raise PermissionDeniedException(message=error_message)
+
+        return member
 
     async def create_new_workspace(
         self, current_user: User, create_request: WorkspaceCreateRequest
@@ -76,8 +91,13 @@ class WorkspaceService:
         update_request: WorkspaceUpdateRequest,
     ):
         # Chủ workspace mới được chỉnh sửa
-        workspace = await self.get_workspace(workspace_id)
-        await self._ensure_owner(user_id=current_user.id, workspace_id=workspace.id)
+        workspace = await self.get_workspace(workspace_id, current_user)
+        await self.ensure_workspace_role(
+            user_id=current_user.id,
+            workspace_id=workspace.id,
+            allowed_roles=[WorkspaceMemberRole.OWNER],
+            error_message=ErrorMessage.WORKSPACE_OWNER_REQUIRED,
+        )
 
         update_dict = update_request.model_dump(exclude_unset=True, exclude_none=True)
         if not update_dict:
@@ -118,8 +138,13 @@ class WorkspaceService:
             raise BadRequestException(message=ErrorMessage.CANNOT_ASSIGN_OWNER_ROLE)
 
         # Chủ workspace mới được thêm thành viên
-        workspace = await self.get_workspace(workspace_id)
-        await self._ensure_owner(user_id=current_user.id, workspace_id=workspace.id)
+        workspace = await self.get_workspace(workspace_id, current_user)
+        await self.ensure_workspace_role(
+            user_id=current_user.id,
+            workspace_id=workspace.id,
+            allowed_roles=[WorkspaceMemberRole.OWNER],
+            error_message=ErrorMessage.WORKSPACE_OWNER_REQUIRED,
+        )
 
         target_user = await self.user_service.get_user(add_member_request.user_id)
         member_existed = await self.workspace_member_repository.get_by_id(
@@ -156,19 +181,26 @@ class WorkspaceService:
         user_id: uuid.UUID,
         current_user: User,
     ):
+        # Không cho phép tự xóa chính mình khỏi workspace
+        if user_id == current_user.id:
+            raise BadRequestException(message=ErrorMessage.CANNOT_REMOVE_SELF)
         # Chủ workspace mới được xóa thành viên
-        workspace = await self.get_workspace(workspace_id)
-        await self._ensure_owner(user_id=current_user.id, workspace_id=workspace.id)
+        workspace = await self.get_workspace(workspace_id, current_user)
+        await self.ensure_workspace_role(
+            user_id=current_user.id,
+            workspace_id=workspace.id,
+            allowed_roles=[WorkspaceMemberRole.OWNER],
+            error_message=ErrorMessage.WORKSPACE_OWNER_REQUIRED,
+        )
 
-        target_user = await self.user_service.get_user(user_id)
         member_existed = await self.workspace_member_repository.get_by_id(
-            (workspace.id, target_user.id)
+            (workspace.id, user_id)
         )
 
         if member_existed is None:
             raise NotFoundException(
                 find_by="id",
-                value=target_user.id,
+                value=user_id,
                 message=ErrorMessage.WORKSPACE_MEMBER_NOT_FOUND,
             )
 
@@ -186,8 +218,13 @@ class WorkspaceService:
         current_user: User,
     ):
         # Chỉ chủ sở hữu mới có quyền xóa
-        workspace = await self.get_workspace(workspace_id)
-        await self._ensure_owner(user_id=current_user.id, workspace_id=workspace.id)
+        workspace = await self.get_workspace(workspace_id, current_user)
+        await self.ensure_workspace_role(
+            user_id=current_user.id,
+            workspace_id=workspace.id,
+            allowed_roles=[WorkspaceMemberRole.OWNER],
+            error_message=ErrorMessage.WORKSPACE_OWNER_REQUIRED,
+        )
         await self.workspace_repository.delete(workspace)
         try:
             await self.db.commit()

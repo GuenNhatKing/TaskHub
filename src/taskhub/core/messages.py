@@ -30,7 +30,7 @@ class ErrorMessage(str, Enum):
     WORKSPACE_MEMBER_NOT_FOUND = "Người dùng không phải thành viên của workspace"
 
     INVALID_CREDENTIAL = "Email hoặc mật khẩu không hợp lệ"
-    INACTIVE_USER = "Tài khoản của bạn đã bị vô hiệu hóa"
+    INACTIVE_USER = "Tài khoản đã bị vô hiệu hóa"
 
     WEAK_PASSWORD = "Mật khẩu phải bao gồm cả chữ cái và chữ số"
     PASSWORD_TOO_LONG = "Mật khẩu dài quá độ dài quy định"
@@ -59,3 +59,4 @@ class ErrorMessage(str, Enum):
         "Phải nhập mật khẩu hiện tại để thay đổi email"
     )
     INCORRECT_CURRENT_PASSWORD = "Mật khẩu hiện tại không chính xác"
+    CANNOT_REMOVE_SELF = "Không thể tự xóa chính bản thân"
