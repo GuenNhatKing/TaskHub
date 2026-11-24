@@ -112,6 +112,11 @@ async def logout(
     response_model=None,
     status_code=status.HTTP_200_OK,
     summary="Đổi mật khẩu người dùng hiện tại",
+    description=(
+        "Đổi mật khẩu của người dùng hiện tại. "
+        "Lưu ý: Toàn bộ access token và refresh token hiện tại sẽ bị vô hiệu hóa ngay lập tức. "
+        "Client bắt buộc phải yêu cầu người dùng đăng nhập lại."
+    ),
     responses={
         status.HTTP_400_BAD_REQUEST: {
             "description": ErrorMessage.SAME_PASSWORD.value,
