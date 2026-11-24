@@ -1,3 +1,6 @@
+from sqlalchemy import update
+
+from taskhub.models.user import User
 from tests.api.v1.constants import PROFILES_URL
 from tests.api.v1.get_auth_credentials import get_auth_headers
 
@@ -223,3 +226,92 @@ async def test_patch_user_profile_extra_fields_rejected(api_client, active_user)
     )
 
     assert response.status_code == 422
+
+
+async def test_patch_user_profile_duplicate_email_case_insensitive(
+    api_client, active_user, inactive_user
+):
+    """Cập nhật email trùng với người dùng khác nhưng khác chữ hoa/thường -> trả về 409"""
+    headers = await get_auth_headers(api_client, active_user)
+
+    response = await api_client.patch(
+        PROFILES_URL,
+        headers=headers,
+        json={
+            "email": inactive_user["email"].upper(),
+            "current_password": active_user["password"],
+        },
+    )
+
+    assert response.status_code == 409
+
+
+async def test_patch_user_profile_same_email(api_client, active_user):
+    """Cập nhật email hiện tại nhưng mà viết hoa -> không báo trùng, trả về 200"""
+    headers = await get_auth_headers(api_client, active_user)
+
+    response = await api_client.patch(
+        PROFILES_URL,
+        headers=headers,
+        json={
+            "email": active_user["email"].upper(),
+            "current_password": active_user["password"],
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["email"] == active_user["email"].lower()
+
+
+async def test_patch_user_profile_email_and_login_flow(api_client, active_user):
+    """Đổi email thành công -> đăng nhập bằng email mới được (200), email cũ bị từ chối (401)"""
+    headers = await get_auth_headers(api_client, active_user)
+    old_email = active_user["email"]
+    new_email = "updated.login@mail.com"
+    password = active_user["password"]
+
+    # Đổi sang email mới
+    patch_res = await api_client.patch(
+        PROFILES_URL,
+        headers=headers,
+        json={
+            "email": new_email,
+            "current_password": password,
+        },
+    )
+    assert patch_res.status_code == 200
+
+    # Đăng nhập bằng email mới -> thành công (200)
+    login_new_res = await api_client.post(
+        "/api/v1/auth/login",
+        json={"email": new_email, "password": password},
+    )
+    assert login_new_res.status_code == 200
+
+    # Đăng nhập bằng email cũ -> thất bại (401)
+    login_old_res = await api_client.post(
+        "/api/v1/auth/login",
+        json={"email": old_email, "password": password},
+    )
+    assert login_old_res.status_code == 401
+
+
+async def test_patch_user_profile_inactive_user(api_client, active_user, db_session):
+    """Tài khoản bị vô hiệu hóa sau khi đã đăng nhập -> gọi PATCH /me trả về 403"""
+    # Lấy token hợp lệ khi user còn đang active
+    headers = await get_auth_headers(api_client, active_user)
+
+    # Khóa tài khoản (is_active = False)
+    await db_session.execute(
+        update(User).where(User.email == active_user["email"]).values(is_active=False)
+    )
+    await db_session.commit()
+
+    # Dùng token cũ để cập nhật profile -> bị chặn với mã 403
+    response = await api_client.patch(
+        PROFILES_URL,
+        headers=headers,
+        json={"full_name": "Inactive User Update"},
+    )
+
+    assert response.status_code == 403
