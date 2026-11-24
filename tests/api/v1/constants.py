@@ -1,8 +1,15 @@
-LOGIN_URL = "/api/v1/auth/login"
-LOGOUT_URL = "/api/v1/auth/logout"
-REGISTER_URL = "/api/v1/auth/register"
-REFRESH_URL = "/api/v1/auth/refresh"
-PROFILES_URL = "/api/v1/users/me"
-CHANGE_PASSWORD_URL = "api/v1/auth/change-password"
-WORKSPACES_URL = "/api/v1/workspaces"
-PROJECTS_URL = "/api/v1/projects"
+API_V1_PREFIX = "/api/v1"
+
+# Auth
+LOGIN_URL = f"{API_V1_PREFIX}/auth/login"
+LOGOUT_URL = f"{API_V1_PREFIX}/auth/logout"
+REGISTER_URL = f"{API_V1_PREFIX}/auth/register"
+REFRESH_URL = f"{API_V1_PREFIX}/auth/refresh"
+CHANGE_PASSWORD_URL = f"{API_V1_PREFIX}/auth/change-password"
+
+# Users & Profiles
+PROFILES_URL = f"{API_V1_PREFIX}/users/me"
+
+# Resources
+WORKSPACES_URL = f"{API_V1_PREFIX}/workspaces"
+PROJECTS_URL = f"{API_V1_PREFIX}/projects"
