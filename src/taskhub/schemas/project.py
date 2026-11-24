@@ -22,7 +22,7 @@ class ProjectResponse(BaseModel):
     id: uuid.UUID
     workspace_id: uuid.UUID
     name: str
-    description: str
+    description: str | None
     status: ProjectStatus
     created_at: datetime
 
