@@ -9,7 +9,7 @@ async def test_change_password_success(api_client, active_user):
     response = await api_client.post(
         CHANGE_PASSWORD_URL,
         json={
-            "old_password": active_user["password"],
+            "current_password": active_user["password"],
             "new_password": new_password,
         },
         headers=headers,
@@ -38,13 +38,13 @@ async def test_change_password_success(api_client, active_user):
     assert "access_token" in new_login_res.json()
 
 
-async def test_change_password_wrong_old_password(api_client, active_user):
+async def test_change_password_wrong_current_password(api_client, active_user):
     headers = await get_auth_headers(api_client, active_user)
 
     response = await api_client.post(
         CHANGE_PASSWORD_URL,
         json={
-            "old_password": "WrongPassword@123",
+            "current_password": "WrongPassword@123",
             "new_password": "StrongPassword@123",
         },
         headers=headers,
@@ -58,7 +58,7 @@ async def test_change_password_same_as_old(api_client, active_user):
     response = await api_client.post(
         CHANGE_PASSWORD_URL,
         json={
-            "old_password": active_user["password"],
+            "current_password": active_user["password"],
             "new_password": active_user["password"],
         },
         headers=headers,
@@ -72,7 +72,7 @@ async def test_change_password_weak_new_password(api_client, active_user):
     response = await api_client.post(
         CHANGE_PASSWORD_URL,
         json={
-            "old_password": active_user["password"],
+            "current_password": active_user["password"],
             "new_password": "12345678",
         },
         headers=headers,
@@ -84,7 +84,7 @@ async def test_change_password_unauthenticated(api_client):
     response = await api_client.post(
         CHANGE_PASSWORD_URL,
         json={
-            "old_password": "SomePassword@123",
+            "current_password": "SomePassword@123",
             "new_password": "StrongPassword@123",
         },
     )
@@ -101,7 +101,7 @@ async def test_refresh_token_after_change_password(api_client, active_user):
     change_res = await api_client.post(
         CHANGE_PASSWORD_URL,
         json={
-            "old_password": active_user["password"],
+            "current_password": active_user["password"],
             "new_password": "StrongPassword@123",
         },
         headers=headers,

@@ -157,14 +157,17 @@ class AuthService:
         # Kiểm tra mật khẩu cũ có khớp không
         is_valid = await run_in_threadpool(
             verify_password,
-            change_password_request.old_password,
+            change_password_request.current_password,
             current_user.hashed_password,
         )
         if not is_valid:
             raise BadRequestException(ErrorMessage.INCORRECT_CURRENT_PASSWORD)
 
         # Tránh đặt mật khẩu mới trùng với mật khẩu cũ
-        if change_password_request.old_password == change_password_request.new_password:
+        if (
+            change_password_request.current_password
+            == change_password_request.new_password
+        ):
             raise SamePasswordException()
 
         # Hash mật khẩu mới, cập nhật thời gian đổi mật khẩu và tăng token_version
