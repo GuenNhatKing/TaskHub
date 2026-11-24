@@ -59,7 +59,9 @@ class UserService:
             await self.db.refresh(user)
         except IntegrityError:
             await self.db.rollback()
-            raise AlreadyExistedException(key=email)
+            if update_data.get("email"):
+                raise AlreadyExistedException(key=update_data["email"])
+            raise
 
         return user
 
