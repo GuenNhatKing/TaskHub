@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import UUID, Boolean, DateTime, Integer, String, func
@@ -34,7 +34,9 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String(60), nullable=False)
     password_changed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        server_default=func.now(),
+        default=lambda: datetime.now(
+            UTC
+        ),  # Dùng giờ App đồng bộ với lúc đổi pass và tạo JWT
         nullable=False,
     )
     token_version: Mapped[int] = mapped_column(
