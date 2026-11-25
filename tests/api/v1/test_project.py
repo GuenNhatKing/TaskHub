@@ -171,7 +171,14 @@ async def test_get_projects_success(api_client, active_user):
     assert len(data["items"]) == 2
     assert data["total"] == 2
     assert data["page"] == 1
-    assert {item["id"] for item in data["items"]} == {p1["id"], p2["id"]}
+
+    expected_ids = [
+        p["id"]
+        for p in sorted(
+            [p1, p2], key=lambda x: (x["created_at"], x["id"]), reverse=True
+        )
+    ]
+    assert [item["id"] for item in data["items"]] == expected_ids
 
 
 async def test_get_projects_empty(api_client, active_user):

@@ -190,7 +190,11 @@ async def test_get_task_comments_success(api_client, active_user):
     assert response.status_code == 200
     data = response.json()
     assert data["total"] == 2
-    assert [item["id"] for item in data["items"]] == [c1["id"], c2["id"]]
+
+    expected_ids = [
+        c["id"] for c in sorted([c1, c2], key=lambda x: (x["created_at"], x["id"]))
+    ]
+    assert [item["id"] for item in data["items"]] == expected_ids
 
 
 async def test_get_task_comments_viewer_allowed(api_client, active_user, other_user):
