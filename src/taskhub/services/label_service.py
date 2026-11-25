@@ -64,7 +64,6 @@ class LabelService:
         if existed is not None:
             raise AlreadyExistedException(
                 key="name",
-                value=create_request.name,
                 message=ErrorMessage.LABEL_EXISTED,
             )
 
@@ -127,7 +126,6 @@ class LabelService:
             if existed is not None:
                 raise AlreadyExistedException(
                     key="name",
-                    value=update_dict["name"],
                     message=ErrorMessage.LABEL_EXISTED,
                 )
 
@@ -191,7 +189,6 @@ class LabelService:
         if existed is not None:
             raise AlreadyExistedException(
                 key="label_id",
-                value=label.id,
                 message=ErrorMessage.TASK_LABEL_ALREADY_EXISTS,
             )
 
@@ -203,11 +200,11 @@ class LabelService:
         try:
             await self.task_label_repository.create(task_label_dict)
             await self.db.commit()
+            await self.db.refresh(task)
         except IntegrityError:
             await self.db.rollback()
             raise AlreadyExistedException(
                 key="label_id",
-                value=label.id,
                 message=ErrorMessage.TASK_LABEL_ALREADY_EXISTS,
             )
         except SQLAlchemyError:

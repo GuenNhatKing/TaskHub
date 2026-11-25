@@ -169,7 +169,6 @@ class WorkspaceService:
             await self.db.rollback()
             raise AlreadyExistedException(
                 key="user_id",
-                value=target_user.id,
                 message=ErrorMessage.MEMBER_ALREADY_EXISTS,
             )
 
