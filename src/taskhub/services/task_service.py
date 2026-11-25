@@ -10,6 +10,8 @@ from taskhub.core.messages import ErrorMessage
 from taskhub.exceptions import NotFoundException
 from taskhub.exceptions.bad_request_ex import BadRequestException
 from taskhub.models import Task, User
+from taskhub.models.project import Project
+from taskhub.models.workspace_member import WorkspaceMember
 from taskhub.repos.base import Page
 from taskhub.repos.task import TaskRepository
 from taskhub.repos.workspace_member import WorkspaceMemberRepository
@@ -30,6 +32,33 @@ class TaskService:
         self.workspace_member_repository = WorkspaceMemberRepository(db)
         self.project_service = project_service
         self.workspace_service = workspace_service
+
+    async def get_task_context(
+        self,
+        task_id: uuid.UUID,
+        user: User,
+        allowed_roles: list[WorkspaceMemberRole] | None = None,
+        error_message: str | None = None,
+        require_active: bool = True,
+    ) -> tuple[Task, Project, WorkspaceMember]:
+        task = await self.get_task(task_id)
+        project = await self.project_service.get_project(task.project_id)
+
+        role_kwargs: dict = {
+            "user_id": user.id,
+            "workspace_id": project.workspace_id,
+        }
+        if allowed_roles is not None:
+            role_kwargs["allowed_roles"] = allowed_roles
+        if error_message is not None:
+            role_kwargs["error_message"] = error_message
+
+        member = await self.workspace_service.ensure_workspace_role(**role_kwargs)
+
+        if require_active:
+            self.project_service.ensure_project_active(project)
+
+        return task, project, member
 
     async def get_task(self, task_id: uuid.UUID) -> Task:
         task = await self.task_repository.get_by_id(task_id)

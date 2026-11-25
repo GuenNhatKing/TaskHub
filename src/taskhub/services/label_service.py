@@ -77,6 +77,12 @@ class LabelService:
             label = await self.label_repository.create(label_dict)
             await self.db.commit()
             await self.db.refresh(label)
+        except IntegrityError:
+            await self.db.rollback()
+            raise AlreadyExistedException(
+                key="name",
+                message=ErrorMessage.LABEL_EXISTED,
+            )
         except SQLAlchemyError:
             await self.db.rollback()
             raise
@@ -129,11 +135,16 @@ class LabelService:
                     message=ErrorMessage.LABEL_EXISTED,
                 )
 
-        label = await self.label_repository.update(label, update_dict)
-
         try:
+            label = await self.label_repository.update(label, update_dict)
             await self.db.commit()
             await self.db.refresh(label)
+        except IntegrityError:
+            await self.db.rollback()
+            raise AlreadyExistedException(
+                key="name",
+                message=ErrorMessage.LABEL_EXISTED,
+            )
         except SQLAlchemyError:
             await self.db.rollback()
             raise
@@ -170,16 +181,12 @@ class LabelService:
         label_id: uuid.UUID,
         current_user: User,
     ) -> list[Label]:
-        task = await self.task_service.get_task(task_id)
-        project = await self.project_service.get_project(task.project_id)
-
-        await self.workspace_service.ensure_workspace_role(
-            user_id=current_user.id,
-            workspace_id=project.workspace_id,
+        task, _, _ = await self.task_service.get_task_context(
+            task_id=task_id,
+            user=current_user,
             allowed_roles=[WorkspaceMemberRole.OWNER, WorkspaceMemberRole.EDITOR],
             error_message=ErrorMessage.WORKSPACE_EDITOR_REQUIRED,
         )
-        self.project_service.ensure_project_active(project)
 
         label = await self.get_label(label_id)
         if label.project_id != task.project_id:
@@ -200,7 +207,6 @@ class LabelService:
         try:
             await self.task_label_repository.create(task_label_dict)
             await self.db.commit()
-            await self.db.refresh(task)
         except IntegrityError:
             await self.db.rollback()
             raise AlreadyExistedException(
@@ -211,19 +217,17 @@ class LabelService:
             await self.db.rollback()
             raise
 
-        return await self.label_repository.get_by_task_id(task.id)
+        return await self.label_repository.get_by_task_id(task_id)
 
     async def get_task_labels(
         self,
         task_id: uuid.UUID,
         current_user: User,
     ) -> list[Label]:
-        task = await self.task_service.get_task(task_id)
-        project = await self.project_service.get_project(task.project_id)
-
-        await self.workspace_service.ensure_workspace_role(
-            user_id=current_user.id,
-            workspace_id=project.workspace_id,
+        task, _, _ = await self.task_service.get_task_context(
+            task_id=task_id,
+            user=current_user,
+            require_active=False,
         )
 
         return await self.label_repository.get_by_task_id(task.id)
@@ -234,16 +238,12 @@ class LabelService:
         label_id: uuid.UUID,
         current_user: User,
     ) -> None:
-        task = await self.task_service.get_task(task_id)
-        project = await self.project_service.get_project(task.project_id)
-
-        await self.workspace_service.ensure_workspace_role(
-            user_id=current_user.id,
-            workspace_id=project.workspace_id,
+        task, _, _ = await self.task_service.get_task_context(
+            task_id=task_id,
+            user=current_user,
             allowed_roles=[WorkspaceMemberRole.OWNER, WorkspaceMemberRole.EDITOR],
             error_message=ErrorMessage.WORKSPACE_EDITOR_REQUIRED,
         )
-        self.project_service.ensure_project_active(project)
 
         task_label = await self.task_label_repository.get_by_id((task.id, label_id))
         if task_label is None:
