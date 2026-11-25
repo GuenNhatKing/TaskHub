@@ -3,7 +3,7 @@ import uuid
 from pydantic import BaseModel, ConfigDict
 
 from taskhub.core.enums import LabelColor
-from taskhub.core.validators import ValidLabelName
+from taskhub.core.validators import NotNull, ValidLabelName
 from taskhub.schemas.base import BaseRequest
 
 
@@ -13,8 +13,8 @@ class LabelCreateRequest(BaseRequest):
 
 
 class LabelUpdateRequest(BaseRequest):
-    name: ValidLabelName | None = None
-    color: LabelColor | None = None
+    name: NotNull[ValidLabelName | None] = None
+    color: NotNull[LabelColor | None] = None
 
 
 class TaskLabelAssignRequest(BaseRequest):

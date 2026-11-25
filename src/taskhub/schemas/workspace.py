@@ -4,7 +4,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
 from taskhub.core.enums import WorkspaceMemberRole
-from taskhub.core.validators import ValidWorkspaceName
+from taskhub.core.validators import NotNull, ValidWorkspaceName
 from taskhub.schemas.base import BaseRequest
 
 
@@ -13,7 +13,7 @@ class WorkspaceCreateRequest(BaseRequest):
 
 
 class WorkspaceUpdateRequest(BaseRequest):
-    name: ValidWorkspaceName | None = None
+    name: NotNull[ValidWorkspaceName | None] = None
 
 
 class WorkspaceAddMemberRequest(BaseRequest):

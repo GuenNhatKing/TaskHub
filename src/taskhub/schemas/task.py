@@ -4,7 +4,12 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
 from taskhub.core.enums import Priority, TaskStatus
-from taskhub.core.validators import AwareDatetime, ValidDescription, ValidTaskTitle
+from taskhub.core.validators import (
+    AwareDatetime,
+    NotNull,
+    ValidDescription,
+    ValidTaskTitle,
+)
 from taskhub.schemas.base import BaseRequest
 
 
@@ -18,11 +23,11 @@ class TaskCreateRequest(BaseRequest):
 
 
 class TaskUpdateRequest(BaseRequest):
-    title: ValidTaskTitle | None = None
+    title: NotNull[ValidTaskTitle | None] = None
     description: ValidDescription | None = None
     assignee_id: uuid.UUID | None = None
-    status: TaskStatus | None = None
-    priority: Priority | None = None
+    status: NotNull[TaskStatus | None] = None
+    priority: NotNull[Priority | None] = None
     due_date: AwareDatetime | None = None
 
 

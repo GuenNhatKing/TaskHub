@@ -3,7 +3,13 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
-from taskhub.core.validators import LoginPassword, LowerEmail, ValidName, ValidPassword
+from taskhub.core.validators import (
+    LoginPassword,
+    LowerEmail,
+    NotNull,
+    ValidName,
+    ValidPassword,
+)
 from taskhub.models.user import ROLE
 from taskhub.schemas.base import BaseRequest
 
@@ -33,9 +39,9 @@ class UserResponse(BaseModel):
 
 
 class UserChangeProfileRequest(BaseRequest):
-    email: LowerEmail | None = None
-    full_name: ValidName | None = None
-    current_password: LoginPassword | None = None
+    email: NotNull[LowerEmail | None] = None
+    full_name: NotNull[ValidName | None] = None
+    current_password: NotNull[LoginPassword | None] = None
 
 
 class ChangePasswordRequest(BaseRequest):
