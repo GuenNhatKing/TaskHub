@@ -42,7 +42,7 @@ class TaskResponse(BaseModel):
     description: str | None
     status: TaskStatus
     priority: Priority
-    due_date: datetime | None
+    due_date: AwareDatetime | None
     created_by: uuid.UUID | None
     created_at: datetime
 
