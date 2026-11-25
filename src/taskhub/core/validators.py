@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
-from typing import Annotated
+from typing import Annotated, Any, TypeVar
 
-from pydantic import AfterValidator, EmailStr, StringConstraints
+from pydantic import AfterValidator, BeforeValidator, EmailStr, StringConstraints
 
 from taskhub.core.constants import (
     BCRYPT_MAX_BYTES,
@@ -16,6 +16,9 @@ from taskhub.core.constants import (
     WORKSPACE_NAME_LENGTH,
 )
 from taskhub.core.messages import ErrorMessage
+
+T = TypeVar("T")
+
 
 ValidName = Annotated[
     str,
@@ -77,6 +80,21 @@ ValidDescription = Annotated[
     str,
     StringConstraints(strip_whitespace=True, min_length=0, max_length=DESC_LENGTH),
 ]
+
+
+def check_field_is_not_null(value: Any) -> Any:
+    if value is None:
+        raise ValueError(ErrorMessage.CAN_NOT_BE_NULL)
+    return value
+
+
+# Với Kiểu dữ liệu là NotNull[T | None] = None
+# Pydantic gán trực tiếp giá trị mặc định None cho field
+# Các validator như là BeforeValidator chỉ chạy khi dữ liệu được truyền vào từ input,
+# hoàn toàn không chạy đối với giá trị mặc định
+# Nghĩa là với trường hợp không có giá trị -> Pass, có giá trị Null -> 422
+NotNull = Annotated[T, BeforeValidator(check_field_is_not_null)]
+
 
 ValidTaskTitle = Annotated[
     str,

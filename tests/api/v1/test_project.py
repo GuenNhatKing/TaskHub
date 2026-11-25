@@ -171,7 +171,14 @@ async def test_get_projects_success(api_client, active_user):
     assert len(data["items"]) == 2
     assert data["total"] == 2
     assert data["page"] == 1
-    assert {item["id"] for item in data["items"]} == {p1["id"], p2["id"]}
+
+    expected_ids = [
+        p["id"]
+        for p in sorted(
+            [p1, p2], key=lambda x: (x["created_at"], x["id"]), reverse=True
+        )
+    ]
+    assert [item["id"] for item in data["items"]] == expected_ids
 
 
 async def test_get_projects_empty(api_client, active_user):
@@ -430,31 +437,62 @@ async def test_update_project_success(api_client, active_user):
     assert data["description"] == payload["description"]
 
 
-async def test_update_project_empty_or_null_ignored(api_client, active_user):
-    """Gửi JSON rỗng {} hoặc giá trị null -> trả về 200 và giữ nguyên dữ liệu cũ"""
+async def test_update_project_empty_payload_ignored(api_client, active_user):
+    """Bỏ trống các trường (gửi JSON rỗng {}) -> trả về 200 và giữ nguyên dữ liệu cũ"""
     headers = await get_auth_headers(api_client, active_user)
     ws = await _create_sample_workspace(api_client, headers)
     project = await _create_sample_project(
         api_client, headers, ws["id"], "Original Name", "Original Desc"
     )
-    project_id = project["id"]
 
-    res_empty = await api_client.patch(
-        f"{PROJECTS_URL}/{project_id}",
+    response = await api_client.patch(
+        f"{PROJECTS_URL}/{project['id']}",
         headers=headers,
         json={},
     )
-    assert res_empty.status_code == 200
-    assert res_empty.json()["name"] == "Original Name"
+    assert response.status_code == 200
+    assert response.json()["name"] == "Original Name"
+    assert response.json()["description"] == "Original Desc"
 
-    res_null = await api_client.patch(
-        f"{PROJECTS_URL}/{project_id}",
-        headers=headers,
-        json={"name": None, "description": None},
+
+async def test_update_project_null_nullable_fields(api_client, active_user):
+    """Truyền null cho trường cho phép null (description) -> trả về 200 và xóa về null"""
+    headers = await get_auth_headers(api_client, active_user)
+    ws = await _create_sample_workspace(api_client, headers)
+    project = await _create_sample_project(
+        api_client, headers, ws["id"], "Original Name", "Original Desc"
     )
-    assert res_null.status_code == 200
-    assert res_null.json()["name"] == "Original Name"
-    assert res_null.json()["description"] == "Original Desc"
+
+    response = await api_client.patch(
+        f"{PROJECTS_URL}/{project['id']}",
+        headers=headers,
+        json={"description": None},
+    )
+    assert response.status_code == 200
+    assert response.json()["name"] == "Original Name"
+    assert response.json()["description"] is None
+
+
+async def test_update_project_null_required_fields(api_client, active_user):
+    """Truyền null cho trường không cho phép null (name, status) -> trả về 422"""
+    headers = await get_auth_headers(api_client, active_user)
+    ws = await _create_sample_workspace(api_client, headers)
+    project = await _create_sample_project(
+        api_client, headers, ws["id"], "Original Name", "Original Desc"
+    )
+
+    null_payloads = [
+        {"name": None},
+        {"status": None},
+    ]
+
+    for payload in null_payloads:
+        response = await api_client.patch(
+            f"{PROJECTS_URL}/{project['id']}",
+            headers=headers,
+            json=payload,
+        )
+        assert response.status_code == 422
 
 
 async def test_update_project_invalid_name(api_client, active_user):
@@ -798,3 +836,32 @@ async def test_create_project_only_name_success(api_client, active_user):
     assert "id" in data
     assert "status" in data
     assert "created_at" in data
+
+
+async def test_get_projects_pagination_page_2(api_client, active_user):
+    """Lấy danh sách project ở trang 2 -> trả về đúng item tiếp theo và metadata phân trang"""
+    headers = await get_auth_headers(api_client, active_user)
+    ws = await _create_sample_workspace(api_client, headers)
+    ws_id = ws["id"]
+
+    p1 = await _create_sample_project(api_client, headers, ws_id, "Project 1")
+    p2 = await _create_sample_project(api_client, headers, ws_id, "Project 2")
+    p3 = await _create_sample_project(api_client, headers, ws_id, "Project 3")
+
+    expected_sorted = sorted(
+        [p1, p2, p3], key=lambda x: (x["created_at"], x["id"]), reverse=True
+    )
+
+    response = await api_client.get(
+        f"{WORKSPACES_URL}/{ws_id}/projects",
+        headers=headers,
+        params={"page": 2, "page_size": 1},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["page"] == 2
+    assert data["total"] == 3
+    assert data["total_pages"] == 3
+    assert len(data["items"]) == 1
+    assert data["items"][0]["id"] == expected_sorted[1]["id"]

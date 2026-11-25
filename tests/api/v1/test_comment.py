@@ -190,7 +190,11 @@ async def test_get_task_comments_success(api_client, active_user):
     assert response.status_code == 200
     data = response.json()
     assert data["total"] == 2
-    assert [item["id"] for item in data["items"]] == [c1["id"], c2["id"]]
+
+    expected_ids = [
+        c["id"] for c in sorted([c1, c2], key=lambda x: (x["created_at"], x["id"]))
+    ]
+    assert [item["id"] for item in data["items"]] == expected_ids
 
 
 async def test_get_task_comments_viewer_allowed(api_client, active_user, other_user):
@@ -241,8 +245,8 @@ async def test_update_comment_success(api_client, active_user):
     assert data["content"] == "Updated content"
 
 
-async def test_update_comment_empty_or_null_ignored(api_client, active_user):
-    """Gửi JSON rỗng {} hoặc content=null -> trả về 200 và giữ nguyên nội dung cũ"""
+async def test_update_comment_empty_payload_ignored(api_client, active_user):
+    """Bỏ trống các trường (gửi JSON rỗng {}) -> trả về 200 và giữ nguyên nội dung cũ"""
     headers = await get_auth_headers(api_client, active_user)
     ws = await _create_sample_workspace(api_client, headers)
     project = await _create_sample_project(api_client, headers, ws["id"])
@@ -251,21 +255,31 @@ async def test_update_comment_empty_or_null_ignored(api_client, active_user):
         api_client, headers, task["id"], "Original content"
     )
 
-    res_empty = await api_client.patch(
+    response = await api_client.patch(
         f"{COMMENTS_URL}/{comment['id']}",
         headers=headers,
         json={},
     )
-    assert res_empty.status_code == 200
-    assert res_empty.json()["content"] == "Original content"
+    assert response.status_code == 200
+    assert response.json()["content"] == "Original content"
 
-    res_null = await api_client.patch(
+
+async def test_update_comment_null_required_field(api_client, active_user):
+    """Truyền null cho trường không cho phép null (content) -> trả về 422"""
+    headers = await get_auth_headers(api_client, active_user)
+    ws = await _create_sample_workspace(api_client, headers)
+    project = await _create_sample_project(api_client, headers, ws["id"])
+    task = await _create_sample_task(api_client, headers, project["id"])
+    comment = await _create_sample_comment(
+        api_client, headers, task["id"], "Original content"
+    )
+
+    response = await api_client.patch(
         f"{COMMENTS_URL}/{comment['id']}",
         headers=headers,
         json={"content": None},
     )
-    assert res_null.status_code == 200
-    assert res_null.json()["content"] == "Original content"
+    assert response.status_code == 422
 
 
 async def test_update_comment_project_archived(api_client, active_user):
@@ -479,3 +493,31 @@ async def test_delete_comment_missing_token_and_not_found(api_client, active_use
         headers=headers,
     )
     assert res_404.status_code == 404
+
+
+async def test_get_task_comments_pagination_page_2(api_client, active_user):
+    """Lấy danh sách bình luận ở trang 2 -> trả về đúng item tiếp theo theo thứ tự tăng dần"""
+    headers = await get_auth_headers(api_client, active_user)
+    ws = await _create_sample_workspace(api_client, headers)
+    project = await _create_sample_project(api_client, headers, ws["id"])
+    task = await _create_sample_task(api_client, headers, project["id"])
+
+    c1 = await _create_sample_comment(api_client, headers, task["id"], "Comment 1")
+    c2 = await _create_sample_comment(api_client, headers, task["id"], "Comment 2")
+    c3 = await _create_sample_comment(api_client, headers, task["id"], "Comment 3")
+
+    expected_sorted = sorted([c1, c2, c3], key=lambda x: (x["created_at"], x["id"]))
+
+    response = await api_client.get(
+        f"{TASKS_URL}/{task['id']}/comments",
+        headers=headers,
+        params={"page": 2, "page_size": 1},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["page"] == 2
+    assert data["total"] == 3
+    assert data["total_pages"] == 3
+    assert len(data["items"]) == 1
+    assert data["items"][0]["id"] == expected_sorted[1]["id"]

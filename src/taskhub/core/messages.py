@@ -19,6 +19,8 @@ class ErrorMessage(str, Enum):
     )
     UNEXPECTED_ERROR = "Đã xảy ra lỗi ngoài dự kiến"
 
+    CAN_NOT_BE_NULL = "Trường không được để giá trị null"
+
     ALREADY_EXISTED = "Đối tượng đã được sử dụng"
     EMAIL_EXISTED = "Email đã được sử dụng"
     WORKSPACE_EXISTED = "Workspace đã được sử dụng"

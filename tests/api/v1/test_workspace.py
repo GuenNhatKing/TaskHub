@@ -387,20 +387,31 @@ async def test_update_workspace_empty_json_ignored(api_client, active_user):
     assert response.json()["name"] == "Original Name"
 
 
-async def test_update_workspace_null_values_ignored(api_client, active_user):
-    """Gửi giá trị null -> giữ nguyên dữ liệu cũ"""
+async def test_update_workspace_empty_payload_ignored(api_client, active_user):
+    """Bỏ trống các trường (gửi JSON rỗng {}) -> trả về 200 và giữ nguyên dữ liệu cũ"""
     headers = await get_auth_headers(api_client, active_user)
-    created_ws = await _create_sample_workspace(api_client, headers, "Original Name")
-    ws_id = created_ws["id"]
+    ws = await _create_sample_workspace(api_client, headers, name="Original Workspace")
 
     response = await api_client.patch(
-        f"{WORKSPACES_URL}/{ws_id}",
+        f"{WORKSPACES_URL}/{ws['id']}",
+        headers=headers,
+        json={},
+    )
+    assert response.status_code == 200
+    assert response.json()["name"] == "Original Workspace"
+
+
+async def test_update_workspace_null_required_field(api_client, active_user):
+    """Truyền null cho trường không cho phép null (name) -> trả về 422"""
+    headers = await get_auth_headers(api_client, active_user)
+    ws = await _create_sample_workspace(api_client, headers, name="Original Workspace")
+
+    response = await api_client.patch(
+        f"{WORKSPACES_URL}/{ws['id']}",
         headers=headers,
         json={"name": None},
     )
-
-    assert response.status_code == 200
-    assert response.json()["name"] == "Original Name"
+    assert response.status_code == 422
 
 
 async def test_update_workspace_no_body(api_client, active_user):

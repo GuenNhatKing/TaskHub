@@ -1,7 +1,7 @@
 from typing import Any, TypeVar
 
 from pydantic.dataclasses import dataclass
-from sqlalchemy import func, select
+from sqlalchemy import ColumnElement, Sequence, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from taskhub.models import Base
@@ -58,30 +58,38 @@ class BaseRepository[T: Base]:
 
     # Phải chỉ định order_by, nên là created_at
     async def get_with_pagination(
-        self, page: int, page_size: int, order_by: Any = None
+        self,
+        page: int,
+        page_size: int,
+        order_by: Sequence[ColumnElement[Any]],
+        conditions: Sequence[ColumnElement[bool]] | None = None,
     ) -> Page[T]:
         if not order_by:
-            raise ValueError("Phải chỉ định kiểu order_by")
+            raise ValueError("Phải chỉ định ít nhất một điều kiện order_by")
         if page < 1 or page_size < 1:
-            raise ValueError("page và page_size phải lớn hơn 1")
+            raise ValueError("page và page_size phải lớn hơn hoặc bằng 1")
 
-        total: int = (
-            await self.db.execute(select(func.count()).select_from(self.model))
-        ).scalar_one()
+        where_clauses = conditions or ()
+
+        count_stmt = select(func.count()).select_from(self.model).where(*where_clauses)
+        total: int = (await self.db.execute(count_stmt)).scalar_one()
 
         total_pages = (total + page_size - 1) // page_size
         offset = (page - 1) * page_size
 
-        items_raw = await self.db.execute(
-            select(self.model).order_by(order_by).offset(offset).limit(page_size)
+        items_stmt = (
+            select(self.model)
+            .where(*where_clauses)
+            .order_by(*order_by)
+            .offset(offset)
+            .limit(page_size)
         )
-        items = list(items_raw.scalars().all())
+        items = list((await self.db.execute(items_stmt)).scalars().all())
 
-        result = Page[self.model](
+        return Page[T](
             items=items,
             total=total,
             page=page,
             page_size=page_size,
             total_pages=total_pages,
         )
-        return result

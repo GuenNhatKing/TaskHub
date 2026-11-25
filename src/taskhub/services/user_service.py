@@ -41,9 +41,7 @@ class UserService:
         current_user: User,
         change_profile_request: UserChangeProfileRequest,
     ):
-        update_data = change_profile_request.model_dump(
-            exclude_unset=True, exclude_none=True
-        )
+        update_data = change_profile_request.model_dump(exclude_unset=True)
         if not update_data:
             return current_user
 

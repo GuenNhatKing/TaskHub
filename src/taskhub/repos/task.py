@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import func, select
+from sqlalchemy import ColumnElement
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from taskhub.core.enums import Priority, TaskStatus
@@ -23,7 +23,7 @@ class TaskRepository(BaseRepository[Task]):
         assignee_id: uuid.UUID | None = None,
         search: str | None = None,
     ) -> Page[Task]:
-        conditions = [Task.project_id == project_id]
+        conditions: list[ColumnElement[bool]] = [Task.project_id == project_id]
 
         if status is not None:
             conditions.append(Task.status == status)
@@ -31,32 +31,13 @@ class TaskRepository(BaseRepository[Task]):
             conditions.append(Task.priority == priority)
         if assignee_id is not None:
             conditions.append(Task.assignee_id == assignee_id)
-        if search:
-            # Tìm kiếm gần đúng như là theo title
+        if search and search.strip():
+            # Tìm kiếm gần đúng theo title
             conditions.append(Task.title.ilike(f"%{search.strip()}%"))
 
-        total: int = (
-            await self.db.execute(
-                select(func.count()).select_from(Task).where(*conditions)
-            )
-        ).scalar_one()
-
-        total_pages = (total + page_size - 1) // page_size
-        offset = (page - 1) * page_size
-
-        stmt = (
-            select(Task)
-            .where(*conditions)
-            .order_by(Task.created_at.desc())
-            .offset(offset)
-            .limit(page_size)
-        )
-        items = list((await self.db.execute(stmt)).scalars().all())
-
-        return Page[Task](
-            items=items,
-            total=total,
+        return await self.get_with_pagination(
             page=page,
             page_size=page_size,
-            total_pages=total_pages,
+            order_by=[Task.created_at.desc(), Task.id.desc()],
+            conditions=conditions,
         )

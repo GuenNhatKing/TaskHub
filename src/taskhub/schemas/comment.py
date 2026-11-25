@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
-from taskhub.core.validators import ValidCommentContent
+from taskhub.core.validators import NotNull, ValidCommentContent
 from taskhub.schemas.base import BaseRequest
 
 
@@ -12,7 +12,7 @@ class CommentCreateRequest(BaseRequest):
 
 
 class CommentUpdateRequest(BaseRequest):
-    content: ValidCommentContent | None = None
+    content: NotNull[ValidCommentContent | None] = None
 
 
 class CommentResponse(BaseModel):

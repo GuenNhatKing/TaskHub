@@ -90,7 +90,6 @@ class TaskService:
             "assignee_id": create_request.assignee_id,
             "title": create_request.title,
             "description": create_request.description,
-            "status": create_request.status,
             "priority": create_request.priority,
             "due_date": create_request.due_date,
             "created_by": current_user.id,

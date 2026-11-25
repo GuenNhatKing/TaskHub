@@ -50,7 +50,7 @@ class Task(Base):
 
     comments: Mapped[list[Comment]] = relationship(
         back_populates="task",
-        cascade="all, delete-orphan",  # Xóa đi nếu Task bị xóa và xóa coment khỏi Task
+        cascade="all, delete-orphan",  # Xóa đi nếu Task bị xóa và xóa comment khỏi Task
     )
     project: Mapped[Project] = relationship(back_populates="tasks")
     assignee: Mapped[User | None] = relationship(

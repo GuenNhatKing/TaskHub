@@ -99,7 +99,7 @@ class WorkspaceService:
             error_message=ErrorMessage.WORKSPACE_OWNER_REQUIRED,
         )
 
-        update_dict = update_request.model_dump(exclude_unset=True, exclude_none=True)
+        update_dict = update_request.model_dump(exclude_unset=True)
         if not update_dict:
             return workspace
 

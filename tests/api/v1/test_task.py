@@ -46,7 +46,6 @@ async def test_create_task_success(api_client, active_user, other_user):
         "title": "Implement Task API",
         "description": "Write endpoints and services for tasks",
         "assignee_id": str(other_user["id"]),
-        "status": TaskStatus.IN_PROGRESS.value,
         "priority": Priority.HIGH.value,
         "due_date": due_date.isoformat(),
     }
@@ -63,7 +62,7 @@ async def test_create_task_success(api_client, active_user, other_user):
     assert data["description"] == payload["description"]
     assert data["project_id"] == project["id"]
     assert data["assignee_id"] == str(other_user["id"])
-    assert data["status"] == TaskStatus.IN_PROGRESS
+    assert data["status"] == TaskStatus.TODO
     assert data["priority"] == Priority.HIGH
     assert datetime.fromisoformat(data["due_date"]) == due_date
     assert data["created_by"] == str(active_user["id"])
@@ -287,7 +286,14 @@ async def test_get_project_tasks_success(api_client, active_user):
     assert len(data["items"]) == 2
     assert data["total"] == 2
     assert data["page"] == 1
-    assert {item["id"] for item in data["items"]} == {t1["id"], t2["id"]}
+
+    expected_ids = [
+        t["id"]
+        for t in sorted(
+            [t1, t2], key=lambda x: (x["created_at"], x["id"]), reverse=True
+        )
+    ]
+    assert [item["id"] for item in data["items"]] == expected_ids
 
 
 async def test_get_project_tasks_empty(api_client, active_user):
@@ -330,7 +336,6 @@ async def test_get_project_tasks_filters_and_search(
         headers,
         project["id"],
         title="Fix Login Bug",
-        status=TaskStatus.IN_PROGRESS.value,
         priority=Priority.HIGH.value,
         assignee_id=str(other_user["id"]),
     )
@@ -339,7 +344,6 @@ async def test_get_project_tasks_filters_and_search(
         headers,
         project["id"],
         title="Write Documentation",
-        status=TaskStatus.TODO.value,
         priority=Priority.LOW.value,
     )
 
@@ -347,7 +351,7 @@ async def test_get_project_tasks_filters_and_search(
         f"{PROJECTS_URL}/{project['id']}/tasks",
         headers=headers,
         params={
-            "status": TaskStatus.IN_PROGRESS.value,
+            "status": TaskStatus.TODO.value,
             "priority": Priority.HIGH.value,
             "assignee_id": str(other_user["id"]),
             "search": "login",
@@ -995,3 +999,90 @@ async def test_delete_task_invalid_uuid(api_client, active_user):
         headers=headers,
     )
     assert response.status_code == 422
+
+
+async def test_update_task_null_required_fields(api_client, active_user):
+    """Truyền null cho các trường bắt buộc (không cho phép null) như title -> trả về 422"""
+    headers = await get_auth_headers(api_client, active_user)
+    ws = await _create_sample_workspace(api_client, headers)
+    project = await _create_sample_project(api_client, headers, ws["id"])
+    task = await _create_sample_task(api_client, headers, project["id"])
+
+    null_payloads = [
+        {"title": None},
+        {"status": None},
+        {"priority": None},
+    ]
+
+    for payload in null_payloads:
+        response = await api_client.patch(
+            f"{TASKS_URL}/{task['id']}",
+            headers=headers,
+            json=payload,
+        )
+        assert response.status_code == 422
+
+
+async def test_create_task_past_due_date(api_client, active_user):
+    """Tạo task với due_date ở quá khứ -> trả về 400"""
+    headers = await get_auth_headers(api_client, active_user)
+    ws = await _create_sample_workspace(api_client, headers)
+    project = await _create_sample_project(api_client, headers, ws["id"])
+
+    past_due_date = (datetime.now(UTC) - timedelta(days=1)).replace(microsecond=0)
+    response = await api_client.post(
+        f"{PROJECTS_URL}/{project['id']}/tasks",
+        headers=headers,
+        json={
+            "title": "Overdue Task",
+            "due_date": past_due_date.isoformat(),
+        },
+    )
+
+    assert response.status_code == 400
+
+
+async def test_update_task_past_due_date(api_client, active_user):
+    """Cập nhật task với due_date ở quá khứ -> trả về 400"""
+    headers = await get_auth_headers(api_client, active_user)
+    ws = await _create_sample_workspace(api_client, headers)
+    project = await _create_sample_project(api_client, headers, ws["id"])
+    task = await _create_sample_task(api_client, headers, project["id"])
+
+    past_due_date = (datetime.now(UTC) - timedelta(days=1)).replace(microsecond=0)
+    response = await api_client.patch(
+        f"{TASKS_URL}/{task['id']}",
+        headers=headers,
+        json={"due_date": past_due_date.isoformat()},
+    )
+
+    assert response.status_code == 400
+
+
+async def test_get_project_tasks_pagination_page_2(api_client, active_user):
+    """Lấy danh sách task ở trang 2 -> trả về đúng item tiếp theo và metadata phân trang"""
+    headers = await get_auth_headers(api_client, active_user)
+    ws = await _create_sample_workspace(api_client, headers)
+    project = await _create_sample_project(api_client, headers, ws["id"])
+
+    t1 = await _create_sample_task(api_client, headers, project["id"], "Task 1")
+    t2 = await _create_sample_task(api_client, headers, project["id"], "Task 2")
+    t3 = await _create_sample_task(api_client, headers, project["id"], "Task 3")
+
+    expected_sorted = sorted(
+        [t1, t2, t3], key=lambda x: (x["created_at"], x["id"]), reverse=True
+    )
+
+    response = await api_client.get(
+        f"{PROJECTS_URL}/{project['id']}/tasks",
+        headers=headers,
+        params={"page": 2, "page_size": 1},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["page"] == 2
+    assert data["total"] == 3
+    assert data["total_pages"] == 3
+    assert len(data["items"]) == 1
+    assert data["items"][0]["id"] == expected_sorted[1]["id"]

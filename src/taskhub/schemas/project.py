@@ -4,7 +4,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
 from taskhub.core.enums import ProjectStatus
-from taskhub.core.validators import ValidDescription, ValidProjectName
+from taskhub.core.validators import NotNull, ValidDescription, ValidProjectName
 from taskhub.schemas.base import BaseRequest
 
 
@@ -14,7 +14,7 @@ class ProjectCreateRequest(BaseRequest):
 
 
 class ProjectUpdateRequest(BaseRequest):
-    name: ValidProjectName | None = None
+    name: NotNull[ValidProjectName | None] = None
     description: ValidDescription | None = None
 
 
