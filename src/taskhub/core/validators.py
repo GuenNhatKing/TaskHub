@@ -5,6 +5,7 @@ from pydantic import AfterValidator, EmailStr, StringConstraints
 
 from taskhub.core.constants import (
     BCRYPT_MAX_BYTES,
+    COMMENT_CONTENT_LENGTH,
     DESC_LENGTH,
     FULLNAME_LENGTH,
     LABEL_NAME_LENGTH,
@@ -98,5 +99,12 @@ ValidLabelName = Annotated[
     str,
     StringConstraints(
         strip_whitespace=True, min_length=1, max_length=LABEL_NAME_LENGTH
+    ),
+]
+
+ValidCommentContent = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True, min_length=1, max_length=COMMENT_CONTENT_LENGTH
     ),
 ]

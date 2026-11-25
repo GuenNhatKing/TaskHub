@@ -1,10 +1,21 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 
-from taskhub.core.dependencies import CurrentUser, get_label_service, get_task_service
+from taskhub.core.constants import DEFAULT_PAGE, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE
+from taskhub.core.dependencies import (
+    CurrentUser,
+    get_comment_service,
+    get_label_service,
+    get_task_service,
+)
 from taskhub.core.messages import ErrorMessage
+from taskhub.schemas.comment import (
+    CommentCreateRequest,
+    CommentListResponse,
+    CommentResponse,
+)
 from taskhub.schemas.label import LabelResponse, TaskLabelAssignRequest
 from taskhub.schemas.task import (
     TaskAssignRequest,
@@ -12,6 +23,7 @@ from taskhub.schemas.task import (
     TaskStatusUpdateRequest,
     TaskUpdateRequest,
 )
+from taskhub.services.comment_service import CommentService
 from taskhub.services.label_service import LabelService
 from taskhub.services.task_service import TaskService
 
@@ -214,3 +226,58 @@ async def remove_label_from_task(
     services: Annotated[LabelService, Depends(get_label_service)],
 ) -> None:
     await services.remove_label_from_task(task_id, label_id, current_user)
+
+
+@router.post(
+    "/{task_id}/comments",
+    response_model=CommentResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Thêm bình luận vào task",
+    responses={
+        status.HTTP_400_BAD_REQUEST: {
+            "description": ErrorMessage.PROJECT_ARCHIVED.value,
+        },
+        status.HTTP_403_FORBIDDEN: {
+            "description": ErrorMessage.WORKSPACE_EDITOR_REQUIRED.value,
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": ErrorMessage.TASK_NOT_FOUND.value,
+        },
+    },
+)
+async def create_task_comment(
+    task_id: uuid.UUID,
+    current_user: CurrentUser,
+    create_request: CommentCreateRequest,
+    services: Annotated[CommentService, Depends(get_comment_service)],
+) -> CommentResponse:
+    return await services.create_comment(task_id, current_user, create_request)
+
+
+@router.get(
+    "/{task_id}/comments",
+    response_model=CommentListResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Lấy danh sách bình luận của task",
+    responses={
+        status.HTTP_403_FORBIDDEN: {
+            "description": ErrorMessage.WORKSPACE_MEMBER_NOT_FOUND.value,
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": ErrorMessage.TASK_NOT_FOUND.value,
+        },
+    },
+)
+async def get_task_comments(
+    task_id: uuid.UUID,
+    current_user: CurrentUser,
+    services: Annotated[CommentService, Depends(get_comment_service)],
+    page: Annotated[int, Query(ge=DEFAULT_PAGE)] = DEFAULT_PAGE,
+    page_size: Annotated[int, Query(ge=1, le=MAX_PAGE_SIZE)] = DEFAULT_PAGE_SIZE,
+):
+    return await services.get_task_comments(
+        task_id=task_id,
+        current_user=current_user,
+        page=page,
+        page_size=page_size,
+    )

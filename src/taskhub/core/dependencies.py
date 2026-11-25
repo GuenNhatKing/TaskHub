@@ -10,6 +10,7 @@ from taskhub.exceptions.auth_ex import InvalidTokenException
 from taskhub.exceptions.not_found_ex import NotFoundException
 from taskhub.models.user import User
 from taskhub.services import AuthService, UserService
+from taskhub.services.comment_service import CommentService
 from taskhub.services.label_service import LabelService
 from taskhub.services.project_service import ProjectService
 from taskhub.services.task_service import TaskService
@@ -92,6 +93,20 @@ def get_label_service(
     workspace_service: Annotated[WorkspaceService, Depends(get_workspace_service)],
 ) -> LabelService:
     return LabelService(
+        db=db,
+        project_service=project_service,
+        task_service=task_service,
+        workspace_service=workspace_service,
+    )
+
+
+def get_comment_service(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    project_service: Annotated[ProjectService, Depends(get_project_service)],
+    task_service: Annotated[TaskService, Depends(get_task_service)],
+    workspace_service: Annotated[WorkspaceService, Depends(get_workspace_service)],
+) -> CommentService:
+    return CommentService(
         db=db,
         project_service=project_service,
         task_service=task_service,
