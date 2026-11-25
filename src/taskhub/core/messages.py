@@ -66,3 +66,9 @@ class ErrorMessage(str, Enum):
         "Người được giao việc không phải thành viên của workspace"
     )
     INVALID_DUE_DATE = "Hạn hoàn thành phải lớn hơn thời điểm hiện tại"
+
+    LABEL_NOT_FOUND = "Label không tồn tại"
+    LABEL_EXISTED = "Tên label đã tồn tại trong project này"
+    LABEL_NOT_IN_PROJECT = "Label không thuộc cùng project với task"
+    TASK_LABEL_ALREADY_EXISTS = "Task đã được gắn label này"
+    TASK_LABEL_NOT_FOUND = "Task chưa được gắn label này"
