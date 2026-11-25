@@ -5,6 +5,7 @@ from sqlalchemy import UUID, ForeignKey, String
 from sqlalchemy import Enum as SqlAlchemyEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from taskhub.core.constants import LABEL_NAME_LENGTH
 from taskhub.core.enums import LabelColor
 
 from .base import Base
@@ -12,8 +13,6 @@ from .base import Base
 if TYPE_CHECKING:
     from .project import Project
     from .task_label import TaskLabel
-
-LABEL_NAME_LENGTH = 100
 
 
 class Label(Base):

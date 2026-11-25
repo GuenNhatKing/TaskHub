@@ -5,13 +5,13 @@ from typing import TYPE_CHECKING
 from sqlalchemy import UUID, DateTime, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from taskhub.core.constants import COMMENT_CONTENT_LENGTH
+
 from .base import Base
 
 if TYPE_CHECKING:
     from .task import Task
     from .user import User
-
-CONTENT_LENGTH = 1000
 
 
 class Comment(Base):
@@ -20,9 +20,13 @@ class Comment(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), default=uuid.uuid4, primary_key=True
     )
-    task_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("tasks.id"), nullable=False)
-    author_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    content: Mapped[str] = mapped_column(String(CONTENT_LENGTH), nullable=False)
+    task_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("tasks.id"), nullable=False
+    )
+    author_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    content: Mapped[str] = mapped_column(String(COMMENT_CONTENT_LENGTH), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
