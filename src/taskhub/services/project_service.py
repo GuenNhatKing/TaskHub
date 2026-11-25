@@ -123,7 +123,7 @@ class ProjectService:
         # Không cho chỉnh sửa thông tin nếu project đang ở trạng thái ARCHIVED
         self.ensure_project_active(project)
 
-        update_dict = update_request.model_dump(exclude_unset=True, exclude_none=True)
+        update_dict = update_request.model_dump(exclude_unset=True)
         if not update_dict:
             return project
 
