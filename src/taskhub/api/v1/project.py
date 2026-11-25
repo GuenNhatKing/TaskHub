@@ -6,13 +6,16 @@ from fastapi import APIRouter, Depends, Query, status
 from taskhub.core.constants import DEFAULT_PAGE, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE
 from taskhub.core.dependencies import (
     CurrentUser,
+    get_label_service,
     get_project_service,
     get_task_service,
 )
 from taskhub.core.enums import Priority, TaskStatus
 from taskhub.core.messages import ErrorMessage
+from taskhub.schemas.label import LabelCreateRequest, LabelResponse
 from taskhub.schemas.project import ProjectResponse, ProjectUpdateRequest
 from taskhub.schemas.task import TaskCreateRequest, TaskListResponse, TaskResponse
+from taskhub.services.label_service import LabelService
 from taskhub.services.project_service import ProjectService
 from taskhub.services.task_service import TaskService
 
@@ -235,3 +238,66 @@ async def get_project_tasks(
         page=page,
         page_size=page_size,
     )
+
+
+@router.post(
+    "/{project_id}/labels",
+    response_model=LabelResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Tạo label mới trong project",
+    responses={
+        status.HTTP_400_BAD_REQUEST: {
+            "description": ErrorMessage.PROJECT_ARCHIVED.value,
+        },
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": ErrorMessage.INVALID_CREDENTIAL.value,
+        },
+        status.HTTP_403_FORBIDDEN: {
+            "description": ErrorMessage.WORKSPACE_EDITOR_REQUIRED.value,
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": ErrorMessage.PROJECT_NOT_FOUND.value,
+        },
+        status.HTTP_409_CONFLICT: {
+            "description": ErrorMessage.LABEL_EXISTED.value,
+        },
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
+            "description": ErrorMessage.BAD_REQUEST.value,
+        },
+    },
+)
+async def create_project_label(
+    project_id: uuid.UUID,
+    current_user: CurrentUser,
+    create_request: LabelCreateRequest,
+    services: Annotated[LabelService, Depends(get_label_service)],
+) -> LabelResponse:
+    return await services.create_label(project_id, current_user, create_request)
+
+
+@router.get(
+    "/{project_id}/labels",
+    response_model=list[LabelResponse],
+    status_code=status.HTTP_200_OK,
+    summary="Lấy danh sách label trong project",
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": ErrorMessage.INVALID_CREDENTIAL.value,
+        },
+        status.HTTP_403_FORBIDDEN: {
+            "description": ErrorMessage.WORKSPACE_MEMBER_NOT_FOUND.value,
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": ErrorMessage.PROJECT_NOT_FOUND.value,
+        },
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
+            "description": ErrorMessage.BAD_REQUEST.value,
+        },
+    },
+)
+async def get_project_labels(
+    project_id: uuid.UUID,
+    current_user: CurrentUser,
+    services: Annotated[LabelService, Depends(get_label_service)],
+) -> list[LabelResponse]:
+    return await services.get_project_labels(project_id, current_user)

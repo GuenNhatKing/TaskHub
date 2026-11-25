@@ -5,8 +5,10 @@ from pydantic import AfterValidator, EmailStr, StringConstraints
 
 from taskhub.core.constants import (
     BCRYPT_MAX_BYTES,
+    COMMENT_CONTENT_LENGTH,
     DESC_LENGTH,
     FULLNAME_LENGTH,
+    LABEL_NAME_LENGTH,
     PASSWORD_LENGTH,
     PASSWORD_MIN_LENGTH,
     PROJECT_NAME_LENGTH,
@@ -91,4 +93,18 @@ def ensure_timezone_aware(value: datetime) -> datetime:
 AwareDatetime = Annotated[
     datetime,
     AfterValidator(ensure_timezone_aware),
+]
+
+ValidLabelName = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True, min_length=1, max_length=LABEL_NAME_LENGTH
+    ),
+]
+
+ValidCommentContent = Annotated[
+    str,
+    StringConstraints(
+        strip_whitespace=True, min_length=1, max_length=COMMENT_CONTENT_LENGTH
+    ),
 ]
