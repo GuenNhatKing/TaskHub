@@ -430,31 +430,62 @@ async def test_update_project_success(api_client, active_user):
     assert data["description"] == payload["description"]
 
 
-async def test_update_project_empty_or_null_ignored(api_client, active_user):
-    """Gửi JSON rỗng {} hoặc giá trị null -> trả về 200 và giữ nguyên dữ liệu cũ"""
+async def test_update_project_empty_payload_ignored(api_client, active_user):
+    """Bỏ trống các trường (gửi JSON rỗng {}) -> trả về 200 và giữ nguyên dữ liệu cũ"""
     headers = await get_auth_headers(api_client, active_user)
     ws = await _create_sample_workspace(api_client, headers)
     project = await _create_sample_project(
         api_client, headers, ws["id"], "Original Name", "Original Desc"
     )
-    project_id = project["id"]
 
-    res_empty = await api_client.patch(
-        f"{PROJECTS_URL}/{project_id}",
+    response = await api_client.patch(
+        f"{PROJECTS_URL}/{project['id']}",
         headers=headers,
         json={},
     )
-    assert res_empty.status_code == 200
-    assert res_empty.json()["name"] == "Original Name"
+    assert response.status_code == 200
+    assert response.json()["name"] == "Original Name"
+    assert response.json()["description"] == "Original Desc"
 
-    res_null = await api_client.patch(
-        f"{PROJECTS_URL}/{project_id}",
-        headers=headers,
-        json={"name": None, "description": None},
+
+async def test_update_project_null_nullable_fields(api_client, active_user):
+    """Truyền null cho trường cho phép null (description) -> trả về 200 và xóa về null"""
+    headers = await get_auth_headers(api_client, active_user)
+    ws = await _create_sample_workspace(api_client, headers)
+    project = await _create_sample_project(
+        api_client, headers, ws["id"], "Original Name", "Original Desc"
     )
-    assert res_null.status_code == 200
-    assert res_null.json()["name"] == "Original Name"
-    assert res_null.json()["description"] == "Original Desc"
+
+    response = await api_client.patch(
+        f"{PROJECTS_URL}/{project['id']}",
+        headers=headers,
+        json={"description": None},
+    )
+    assert response.status_code == 200
+    assert response.json()["name"] == "Original Name"
+    assert response.json()["description"] is None
+
+
+async def test_update_project_null_required_fields(api_client, active_user):
+    """Truyền null cho trường không cho phép null (name, status) -> trả về 422"""
+    headers = await get_auth_headers(api_client, active_user)
+    ws = await _create_sample_workspace(api_client, headers)
+    project = await _create_sample_project(
+        api_client, headers, ws["id"], "Original Name", "Original Desc"
+    )
+
+    null_payloads = [
+        {"name": None},
+        {"status": None},
+    ]
+
+    for payload in null_payloads:
+        response = await api_client.patch(
+            f"{PROJECTS_URL}/{project['id']}",
+            headers=headers,
+            json=payload,
+        )
+        assert response.status_code == 422
 
 
 async def test_update_project_invalid_name(api_client, active_user):

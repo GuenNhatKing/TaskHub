@@ -342,8 +342,8 @@ async def test_update_label_success(api_client, active_user):
     assert data["color"] == LabelColor.RED
 
 
-async def test_update_label_empty_or_null_ignored(api_client, active_user):
-    """Gửi JSON rỗng {} hoặc giá trị null -> trả về 200 và giữ nguyên dữ liệu cũ"""
+async def test_update_label_empty_payload_ignored(api_client, active_user):
+    """Bỏ trống các trường (gửi JSON rỗng {}) -> trả về 200 và giữ nguyên dữ liệu cũ"""
     headers = await get_auth_headers(api_client, active_user)
     ws = await _create_sample_workspace(api_client, headers)
     project = await _create_sample_project(api_client, headers, ws["id"])
@@ -351,22 +351,37 @@ async def test_update_label_empty_or_null_ignored(api_client, active_user):
         api_client, headers, project["id"], "Keep Name", LabelColor.YELLOW
     )
 
-    res_empty = await api_client.patch(
+    response = await api_client.patch(
         f"{LABELS_URL}/{label['id']}",
         headers=headers,
         json={},
     )
-    assert res_empty.status_code == 200
-    assert res_empty.json()["name"] == "Keep Name"
+    assert response.status_code == 200
+    assert response.json()["name"] == "Keep Name"
+    assert response.json()["color"] == LabelColor.YELLOW
 
-    res_null = await api_client.patch(
-        f"{LABELS_URL}/{label['id']}",
-        headers=headers,
-        json={"name": None, "color": None},
+
+async def test_update_label_null_required_fields(api_client, active_user):
+    """Truyền null cho các trường không cho phép null (name, color) -> trả về 422"""
+    headers = await get_auth_headers(api_client, active_user)
+    ws = await _create_sample_workspace(api_client, headers)
+    project = await _create_sample_project(api_client, headers, ws["id"])
+    label = await _create_sample_label(
+        api_client, headers, project["id"], "Keep Name", LabelColor.YELLOW
     )
-    assert res_null.status_code == 200
-    assert res_null.json()["name"] == "Keep Name"
-    assert res_null.json()["color"] == LabelColor.YELLOW
+
+    null_payloads = [
+        {"name": None},
+        {"color": None},
+    ]
+
+    for payload in null_payloads:
+        response = await api_client.patch(
+            f"{LABELS_URL}/{label['id']}",
+            headers=headers,
+            json=payload,
+        )
+        assert response.status_code == 422
 
 
 async def test_update_label_duplicate_name_conflict(api_client, active_user):

@@ -137,20 +137,38 @@ async def test_patch_user_profile_no_body(api_client, active_user):
     assert response.status_code == 422
 
 
-async def test_patch_user_profile_null_values_ignored(api_client, active_user):
-    """Gửi giá trị null -> Bị bỏ qua, không làm mất dữ liệu hiện tại"""
+async def test_patch_user_profile_empty_payload_ignored(api_client, active_user):
+    """Bỏ trống các trường (gửi JSON rỗng {}) -> trả về 200 và giữ nguyên dữ liệu cũ"""
     headers = await get_auth_headers(api_client, active_user)
 
     response = await api_client.patch(
         PROFILES_URL,
         headers=headers,
-        json={"email": None, "full_name": None},
+        json={},
     )
 
     assert response.status_code == 200
     data = response.json()
     assert data["full_name"] == active_user["full_name"]
     assert data["email"] == active_user["email"]
+
+
+async def test_patch_user_profile_null_required_fields(api_client, active_user):
+    """Truyền null cho các trường không cho phép null (email, full_name) -> trả về 422"""
+    headers = await get_auth_headers(api_client, active_user)
+
+    null_payloads = [
+        {"email": None},
+        {"full_name": None},
+    ]
+
+    for payload in null_payloads:
+        response = await api_client.patch(
+            PROFILES_URL,
+            headers=headers,
+            json=payload,
+        )
+        assert response.status_code == 422
 
 
 async def test_patch_user_profile_invalid_email(api_client, active_user):
