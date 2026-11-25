@@ -102,13 +102,9 @@ def get_label_service(
 
 def get_comment_service(
     db: Annotated[AsyncSession, Depends(get_db)],
-    project_service: Annotated[ProjectService, Depends(get_project_service)],
     task_service: Annotated[TaskService, Depends(get_task_service)],
-    workspace_service: Annotated[WorkspaceService, Depends(get_workspace_service)],
 ) -> CommentService:
     return CommentService(
         db=db,
-        project_service=project_service,
         task_service=task_service,
-        workspace_service=workspace_service,
     )

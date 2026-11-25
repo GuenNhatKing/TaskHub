@@ -11,24 +11,18 @@ from taskhub.models import Comment, User
 from taskhub.repos.base import Page
 from taskhub.repos.comment import CommentRepository
 from taskhub.schemas.comment import CommentCreateRequest, CommentUpdateRequest
-from taskhub.services.project_service import ProjectService
 from taskhub.services.task_service import TaskService
-from taskhub.services.workspace_service import WorkspaceService
 
 
 class CommentService:
     def __init__(
         self,
         db: AsyncSession,
-        project_service: ProjectService,
         task_service: TaskService,
-        workspace_service: WorkspaceService,
     ):
         self.db = db
         self.comment_repository = CommentRepository(db)
-        self.project_service = project_service
         self.task_service = task_service
-        self.workspace_service = workspace_service
 
     async def get_comment(self, comment_id: uuid.UUID) -> Comment:
         comment = await self.comment_repository.get_by_id(comment_id)
@@ -46,16 +40,12 @@ class CommentService:
         current_user: User,
         create_request: CommentCreateRequest,
     ) -> Comment:
-        task = await self.task_service.get_task(task_id)
-        project = await self.project_service.get_project(task.project_id)
-
-        await self.workspace_service.ensure_workspace_role(
-            user_id=current_user.id,
-            workspace_id=project.workspace_id,
+        task, _, _ = await self.task_service.get_task_context(
+            task_id=task_id,
+            user=current_user,
             allowed_roles=[WorkspaceMemberRole.OWNER, WorkspaceMemberRole.EDITOR],
             error_message=ErrorMessage.WORKSPACE_EDITOR_REQUIRED,
         )
-        self.project_service.ensure_project_active(project)
 
         comment_dict = {
             "task_id": task.id,
@@ -80,12 +70,10 @@ class CommentService:
         page: int = DEFAULT_PAGE,
         page_size: int = DEFAULT_PAGE_SIZE,
     ) -> Page[Comment]:
-        task = await self.task_service.get_task(task_id)
-        project = await self.project_service.get_project(task.project_id)
-
-        await self.workspace_service.ensure_workspace_role(
-            user_id=current_user.id,
-            workspace_id=project.workspace_id,
+        task, _, _ = await self.task_service.get_task_context(
+            task_id=task_id,
+            user=current_user,
+            require_active=False,
         )
 
         return await self.comment_repository.get_by_task_id(
@@ -101,12 +89,9 @@ class CommentService:
         update_request: CommentUpdateRequest,
     ) -> Comment:
         comment = await self.get_comment(comment_id)
-        task = await self.task_service.get_task(comment.task_id)
-        project = await self.project_service.get_project(task.project_id)
-
-        await self.workspace_service.ensure_workspace_role(
-            user_id=current_user.id,
-            workspace_id=project.workspace_id,
+        await self.task_service.get_task_context(
+            task_id=comment.task_id,
+            user=current_user,
         )
 
         # Chỉ chính tác giả bình luận mới được phép chỉnh sửa
@@ -114,8 +99,6 @@ class CommentService:
             raise PermissionDeniedException(
                 message=ErrorMessage.COMMENT_EDIT_PERMISSION_DENIED
             )
-
-        self.project_service.ensure_project_active(project)
 
         update_dict = update_request.model_dump(exclude_unset=True)
         if not update_dict:
@@ -138,14 +121,10 @@ class CommentService:
         current_user: User,
     ) -> None:
         comment = await self.get_comment(comment_id)
-        task = await self.task_service.get_task(comment.task_id)
-        project = await self.project_service.get_project(task.project_id)
-
-        member = await self.workspace_service.ensure_workspace_role(
-            user_id=current_user.id,
-            workspace_id=project.workspace_id,
+        _, _, member = await self.task_service.get_task_context(
+            task_id=comment.task_id,
+            user=current_user,
         )
-        self.project_service.ensure_project_active(project)
 
         # Chỉ tác giả comment hoặc chủ workspace mới có quyền xóa
         if (

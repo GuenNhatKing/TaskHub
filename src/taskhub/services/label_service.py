@@ -57,6 +57,7 @@ class LabelService:
         )
         self.project_service.ensure_project_active(project)
 
+        # Không tạo label với name đã có trong project
         existed = await self.label_repository.get_by_project_and_name(
             project.id, create_request.name
         )
@@ -123,6 +124,7 @@ class LabelService:
         if not update_dict:
             return label
 
+        # Kiểm tra khi cập nhật name, đảm bảo name chưa có trong project
         if "name" in update_dict and update_dict["name"].lower() != label.name.lower():
             existed = await self.label_repository.get_by_project_and_name(
                 project.id, update_dict["name"]
@@ -179,16 +181,12 @@ class LabelService:
         label_id: uuid.UUID,
         current_user: User,
     ) -> list[Label]:
-        task = await self.task_service.get_task(task_id)
-        project = await self.project_service.get_project(task.project_id)
-
-        await self.workspace_service.ensure_workspace_role(
-            user_id=current_user.id,
-            workspace_id=project.workspace_id,
+        task, _, _ = await self.task_service.get_task_context(
+            task_id=task_id,
+            user=current_user,
             allowed_roles=[WorkspaceMemberRole.OWNER, WorkspaceMemberRole.EDITOR],
             error_message=ErrorMessage.WORKSPACE_EDITOR_REQUIRED,
         )
-        self.project_service.ensure_project_active(project)
 
         label = await self.get_label(label_id)
         if label.project_id != task.project_id:
@@ -227,12 +225,10 @@ class LabelService:
         task_id: uuid.UUID,
         current_user: User,
     ) -> list[Label]:
-        task = await self.task_service.get_task(task_id)
-        project = await self.project_service.get_project(task.project_id)
-
-        await self.workspace_service.ensure_workspace_role(
-            user_id=current_user.id,
-            workspace_id=project.workspace_id,
+        task, _, _ = await self.task_service.get_task_context(
+            task_id=task_id,
+            user=current_user,
+            require_active=False,
         )
 
         return await self.label_repository.get_by_task_id(task.id)
@@ -243,16 +239,12 @@ class LabelService:
         label_id: uuid.UUID,
         current_user: User,
     ) -> None:
-        task = await self.task_service.get_task(task_id)
-        project = await self.project_service.get_project(task.project_id)
-
-        await self.workspace_service.ensure_workspace_role(
-            user_id=current_user.id,
-            workspace_id=project.workspace_id,
+        task, _, _ = await self.task_service.get_task_context(
+            task_id=task_id,
+            user=current_user,
             allowed_roles=[WorkspaceMemberRole.OWNER, WorkspaceMemberRole.EDITOR],
             error_message=ErrorMessage.WORKSPACE_EDITOR_REQUIRED,
         )
-        self.project_service.ensure_project_active(project)
 
         task_label = await self.task_label_repository.get_by_id((task.id, label_id))
         if task_label is None:
