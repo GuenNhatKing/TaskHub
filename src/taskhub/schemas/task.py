@@ -17,7 +17,6 @@ class TaskCreateRequest(BaseRequest):
     title: ValidTaskTitle
     description: ValidDescription | None = None
     assignee_id: uuid.UUID | None = None
-    status: TaskStatus = TaskStatus.TODO
     priority: Priority = Priority.MEDIUM
     due_date: AwareDatetime | None = None
 
