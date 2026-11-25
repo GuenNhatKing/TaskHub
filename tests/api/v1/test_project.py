@@ -3,18 +3,7 @@ import uuid
 from taskhub.core.enums import ProjectStatus, WorkspaceMemberRole
 from tests.api.v1.constants import PROJECTS_URL, WORKSPACES_URL
 from tests.api.v1.get_auth_credentials import get_auth_headers
-
-
-async def _create_sample_workspace(
-    api_client, headers: dict, name: str = "My Workspace"
-) -> dict:
-    response = await api_client.post(
-        WORKSPACES_URL,
-        headers=headers,
-        json={"name": name},
-    )
-    assert response.status_code == 201
-    return response.json()
+from tests.api.v1.test_workspace import _create_sample_workspace
 
 
 async def _create_sample_project(

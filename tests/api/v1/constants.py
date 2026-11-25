@@ -13,3 +13,4 @@ PROFILES_URL = f"{API_V1_PREFIX}/users/me"
 # Resources
 WORKSPACES_URL = f"{API_V1_PREFIX}/workspaces"
 PROJECTS_URL = f"{API_V1_PREFIX}/projects"
+TASKS_URL = f"{API_V1_PREFIX}/tasks"
