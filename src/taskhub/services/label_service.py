@@ -57,7 +57,6 @@ class LabelService:
         )
         self.project_service.ensure_project_active(project)
 
-        # Không tạo label với name đã có trong project
         existed = await self.label_repository.get_by_project_and_name(
             project.id, create_request.name
         )
@@ -77,6 +76,12 @@ class LabelService:
             label = await self.label_repository.create(label_dict)
             await self.db.commit()
             await self.db.refresh(label)
+        except IntegrityError:
+            await self.db.rollback()
+            raise AlreadyExistedException(
+                key="name",
+                message=ErrorMessage.LABEL_EXISTED,
+            )
         except SQLAlchemyError:
             await self.db.rollback()
             raise
@@ -118,7 +123,6 @@ class LabelService:
         if not update_dict:
             return label
 
-        # Kiểm tra khi cập nhật name, đảm bảo name chưa có trong project
         if "name" in update_dict and update_dict["name"].lower() != label.name.lower():
             existed = await self.label_repository.get_by_project_and_name(
                 project.id, update_dict["name"]
@@ -129,11 +133,16 @@ class LabelService:
                     message=ErrorMessage.LABEL_EXISTED,
                 )
 
-        label = await self.label_repository.update(label, update_dict)
-
         try:
+            label = await self.label_repository.update(label, update_dict)
             await self.db.commit()
             await self.db.refresh(label)
+        except IntegrityError:
+            await self.db.rollback()
+            raise AlreadyExistedException(
+                key="name",
+                message=ErrorMessage.LABEL_EXISTED,
+            )
         except SQLAlchemyError:
             await self.db.rollback()
             raise

@@ -1,7 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import UUID, ForeignKey, String
+from sqlalchemy import UUID, ForeignKey, Index, String, func
 from sqlalchemy import Enum as SqlAlchemyEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -29,6 +29,14 @@ class Label(Base):
     name: Mapped[str] = mapped_column(String(LABEL_NAME_LENGTH), nullable=False)
     color: Mapped[LabelColor] = mapped_column(
         SqlAlchemyEnum(LabelColor), default=LabelColor.BLUE, nullable=False
+    )
+    __table_args__ = (
+        Index(
+            "uq_labels_project_id_lower_name",
+            "project_id",
+            func.lower(name),
+            unique=True,
+        ),
     )
 
     project: Mapped[Project] = relationship(back_populates="labels")
