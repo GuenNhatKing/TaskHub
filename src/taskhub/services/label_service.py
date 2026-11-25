@@ -207,7 +207,6 @@ class LabelService:
         try:
             await self.task_label_repository.create(task_label_dict)
             await self.db.commit()
-            await self.db.refresh(task)
         except IntegrityError:
             await self.db.rollback()
             raise AlreadyExistedException(
@@ -218,7 +217,7 @@ class LabelService:
             await self.db.rollback()
             raise
 
-        return await self.label_repository.get_by_task_id(task.id)
+        return await self.label_repository.get_by_task_id(task_id)
 
     async def get_task_labels(
         self,
