@@ -46,7 +46,6 @@ async def test_create_task_success(api_client, active_user, other_user):
         "title": "Implement Task API",
         "description": "Write endpoints and services for tasks",
         "assignee_id": str(other_user["id"]),
-        "status": TaskStatus.IN_PROGRESS.value,
         "priority": Priority.HIGH.value,
         "due_date": due_date.isoformat(),
     }
@@ -63,7 +62,7 @@ async def test_create_task_success(api_client, active_user, other_user):
     assert data["description"] == payload["description"]
     assert data["project_id"] == project["id"]
     assert data["assignee_id"] == str(other_user["id"])
-    assert data["status"] == TaskStatus.IN_PROGRESS
+    assert data["status"] == TaskStatus.TODO
     assert data["priority"] == Priority.HIGH
     assert datetime.fromisoformat(data["due_date"]) == due_date
     assert data["created_by"] == str(active_user["id"])
@@ -337,7 +336,6 @@ async def test_get_project_tasks_filters_and_search(
         headers,
         project["id"],
         title="Fix Login Bug",
-        status=TaskStatus.IN_PROGRESS.value,
         priority=Priority.HIGH.value,
         assignee_id=str(other_user["id"]),
     )
@@ -346,7 +344,6 @@ async def test_get_project_tasks_filters_and_search(
         headers,
         project["id"],
         title="Write Documentation",
-        status=TaskStatus.TODO.value,
         priority=Priority.LOW.value,
     )
 
@@ -354,7 +351,7 @@ async def test_get_project_tasks_filters_and_search(
         f"{PROJECTS_URL}/{project['id']}/tasks",
         headers=headers,
         params={
-            "status": TaskStatus.IN_PROGRESS.value,
+            "status": TaskStatus.TODO.value,
             "priority": Priority.HIGH.value,
             "assignee_id": str(other_user["id"]),
             "search": "login",
