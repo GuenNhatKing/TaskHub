@@ -493,3 +493,31 @@ async def test_delete_comment_missing_token_and_not_found(api_client, active_use
         headers=headers,
     )
     assert res_404.status_code == 404
+
+
+async def test_get_task_comments_pagination_page_2(api_client, active_user):
+    """Lấy danh sách bình luận ở trang 2 -> trả về đúng item tiếp theo theo thứ tự tăng dần"""
+    headers = await get_auth_headers(api_client, active_user)
+    ws = await _create_sample_workspace(api_client, headers)
+    project = await _create_sample_project(api_client, headers, ws["id"])
+    task = await _create_sample_task(api_client, headers, project["id"])
+
+    c1 = await _create_sample_comment(api_client, headers, task["id"], "Comment 1")
+    c2 = await _create_sample_comment(api_client, headers, task["id"], "Comment 2")
+    c3 = await _create_sample_comment(api_client, headers, task["id"], "Comment 3")
+
+    expected_sorted = sorted([c1, c2, c3], key=lambda x: (x["created_at"], x["id"]))
+
+    response = await api_client.get(
+        f"{TASKS_URL}/{task['id']}/comments",
+        headers=headers,
+        params={"page": 2, "page_size": 1},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["page"] == 2
+    assert data["total"] == 3
+    assert data["total_pages"] == 3
+    assert len(data["items"]) == 1
+    assert data["items"][0]["id"] == expected_sorted[1]["id"]

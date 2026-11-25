@@ -1060,3 +1060,32 @@ async def test_update_task_past_due_date(api_client, active_user):
     )
 
     assert response.status_code == 400
+
+
+async def test_get_project_tasks_pagination_page_2(api_client, active_user):
+    """Lấy danh sách task ở trang 2 -> trả về đúng item tiếp theo và metadata phân trang"""
+    headers = await get_auth_headers(api_client, active_user)
+    ws = await _create_sample_workspace(api_client, headers)
+    project = await _create_sample_project(api_client, headers, ws["id"])
+
+    t1 = await _create_sample_task(api_client, headers, project["id"], "Task 1")
+    t2 = await _create_sample_task(api_client, headers, project["id"], "Task 2")
+    t3 = await _create_sample_task(api_client, headers, project["id"], "Task 3")
+
+    expected_sorted = sorted(
+        [t1, t2, t3], key=lambda x: (x["created_at"], x["id"]), reverse=True
+    )
+
+    response = await api_client.get(
+        f"{PROJECTS_URL}/{project['id']}/tasks",
+        headers=headers,
+        params={"page": 2, "page_size": 1},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["page"] == 2
+    assert data["total"] == 3
+    assert data["total_pages"] == 3
+    assert len(data["items"]) == 1
+    assert data["items"][0]["id"] == expected_sorted[1]["id"]

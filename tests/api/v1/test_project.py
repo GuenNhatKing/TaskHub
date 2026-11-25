@@ -836,3 +836,32 @@ async def test_create_project_only_name_success(api_client, active_user):
     assert "id" in data
     assert "status" in data
     assert "created_at" in data
+
+
+async def test_get_projects_pagination_page_2(api_client, active_user):
+    """Lấy danh sách project ở trang 2 -> trả về đúng item tiếp theo và metadata phân trang"""
+    headers = await get_auth_headers(api_client, active_user)
+    ws = await _create_sample_workspace(api_client, headers)
+    ws_id = ws["id"]
+
+    p1 = await _create_sample_project(api_client, headers, ws_id, "Project 1")
+    p2 = await _create_sample_project(api_client, headers, ws_id, "Project 2")
+    p3 = await _create_sample_project(api_client, headers, ws_id, "Project 3")
+
+    expected_sorted = sorted(
+        [p1, p2, p3], key=lambda x: (x["created_at"], x["id"]), reverse=True
+    )
+
+    response = await api_client.get(
+        f"{WORKSPACES_URL}/{ws_id}/projects",
+        headers=headers,
+        params={"page": 2, "page_size": 1},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["page"] == 2
+    assert data["total"] == 3
+    assert data["total_pages"] == 3
+    assert len(data["items"]) == 1
+    assert data["items"][0]["id"] == expected_sorted[1]["id"]
