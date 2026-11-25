@@ -1,7 +1,6 @@
 import uuid
-from select import select
 
-from sqlalchemy import func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from taskhub.models import Comment
