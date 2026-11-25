@@ -60,3 +60,9 @@ class ErrorMessage(str, Enum):
     )
     INCORRECT_CURRENT_PASSWORD = "Mật khẩu hiện tại không chính xác"
     CANNOT_REMOVE_SELF = "Không thể tự xóa chính bản thân"
+
+    TASK_NOT_FOUND = "Task không tồn tại"
+    ASSIGNEE_NOT_IN_WORKSPACE = (
+        "Người được giao việc không phải thành viên của workspace"
+    )
+    INVALID_DUE_DATE = "Hạn hoàn thành phải lớn hơn thời điểm hiện tại"

@@ -11,6 +11,7 @@ from taskhub.exceptions.not_found_ex import NotFoundException
 from taskhub.models.user import User
 from taskhub.services import AuthService, UserService
 from taskhub.services.project_service import ProjectService
+from taskhub.services.task_service import TaskService
 from taskhub.services.workspace_service import WorkspaceService
 
 from .session import AsyncSessionLocal
@@ -69,3 +70,15 @@ def get_project_service(
     workspace_service: Annotated[WorkspaceService, Depends(get_workspace_service)],
 ):
     return ProjectService(db=db, workspace_service=workspace_service)
+
+
+def get_task_service(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    project_service: Annotated[ProjectService, Depends(get_project_service)],
+    workspace_service: Annotated[WorkspaceService, Depends(get_workspace_service)],
+) -> TaskService:
+    return TaskService(
+        db=db,
+        project_service=project_service,
+        workspace_service=workspace_service,
+    )
