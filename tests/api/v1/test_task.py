@@ -995,3 +995,25 @@ async def test_delete_task_invalid_uuid(api_client, active_user):
         headers=headers,
     )
     assert response.status_code == 422
+
+
+async def test_update_task_null_required_fields(api_client, active_user):
+    """Truyền null cho các trường bắt buộc (không cho phép null) như title -> trả về 422"""
+    headers = await get_auth_headers(api_client, active_user)
+    ws = await _create_sample_workspace(api_client, headers)
+    project = await _create_sample_project(api_client, headers, ws["id"])
+    task = await _create_sample_task(api_client, headers, project["id"])
+
+    null_payloads = [
+        {"title": None},
+        {"status": None},
+        {"priority": None},
+    ]
+
+    for payload in null_payloads:
+        response = await api_client.patch(
+            f"{TASKS_URL}/{task['id']}",
+            headers=headers,
+            json=payload,
+        )
+        assert response.status_code == 422
