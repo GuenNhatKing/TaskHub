@@ -1017,3 +1017,39 @@ async def test_update_task_null_required_fields(api_client, active_user):
             json=payload,
         )
         assert response.status_code == 422
+
+
+async def test_create_task_past_due_date(api_client, active_user):
+    """Tạo task với due_date ở quá khứ -> trả về 400"""
+    headers = await get_auth_headers(api_client, active_user)
+    ws = await _create_sample_workspace(api_client, headers)
+    project = await _create_sample_project(api_client, headers, ws["id"])
+
+    past_due_date = (datetime.now(UTC) - timedelta(days=1)).replace(microsecond=0)
+    response = await api_client.post(
+        f"{PROJECTS_URL}/{project['id']}/tasks",
+        headers=headers,
+        json={
+            "title": "Overdue Task",
+            "due_date": past_due_date.isoformat(),
+        },
+    )
+
+    assert response.status_code == 400
+
+
+async def test_update_task_past_due_date(api_client, active_user):
+    """Cập nhật task với due_date ở quá khứ -> trả về 400"""
+    headers = await get_auth_headers(api_client, active_user)
+    ws = await _create_sample_workspace(api_client, headers)
+    project = await _create_sample_project(api_client, headers, ws["id"])
+    task = await _create_sample_task(api_client, headers, project["id"])
+
+    past_due_date = (datetime.now(UTC) - timedelta(days=1)).replace(microsecond=0)
+    response = await api_client.patch(
+        f"{TASKS_URL}/{task['id']}",
+        headers=headers,
+        json={"due_date": past_due_date.isoformat()},
+    )
+
+    assert response.status_code == 400
