@@ -44,7 +44,11 @@ project_task_router = APIRouter(
     summary="Tạo task mới trong project",
     responses={
         status.HTTP_400_BAD_REQUEST: {
-            "description": f"{ErrorMessage.PROJECT_ARCHIVED.value} / {ErrorMessage.ASSIGNEE_NOT_IN_WORKSPACE.value}",
+            "description": (
+                f"{ErrorMessage.PROJECT_ARCHIVED.value} / "
+                f"{ErrorMessage.INVALID_DUE_DATE.value} / "
+                f"{ErrorMessage.ASSIGNEE_NOT_IN_WORKSPACE.value}"
+            ),
         },
         status.HTTP_401_UNAUTHORIZED: {
             "description": ErrorMessage.INVALID_CREDENTIAL.value,
@@ -147,7 +151,11 @@ async def get_task(
     summary="Cập nhật thông tin task (title, description, assignee, status, priority, due_date)",
     responses={
         status.HTTP_400_BAD_REQUEST: {
-            "description": f"{ErrorMessage.PROJECT_ARCHIVED.value} / {ErrorMessage.ASSIGNEE_NOT_IN_WORKSPACE.value}",
+            "description": (
+                f"{ErrorMessage.PROJECT_ARCHIVED.value} / "
+                f"{ErrorMessage.INVALID_DUE_DATE.value} / "
+                f"{ErrorMessage.ASSIGNEE_NOT_IN_WORKSPACE.value}"
+            ),
         },
         status.HTTP_401_UNAUTHORIZED: {
             "description": ErrorMessage.INVALID_CREDENTIAL.value,
@@ -177,6 +185,26 @@ async def update_task(
     response_model=TaskResponse,
     status_code=status.HTTP_200_OK,
     summary="Giao hoặc gỡ người thực hiện task",
+    responses={
+        status.HTTP_400_BAD_REQUEST: {
+            "description": (
+                f"{ErrorMessage.PROJECT_ARCHIVED.value} / "
+                f"{ErrorMessage.ASSIGNEE_NOT_IN_WORKSPACE.value}"
+            ),
+        },
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": ErrorMessage.INVALID_CREDENTIAL.value,
+        },
+        status.HTTP_403_FORBIDDEN: {
+            "description": ErrorMessage.WORKSPACE_EDITOR_REQUIRED.value,
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": ErrorMessage.TASK_NOT_FOUND.value,
+        },
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
+            "description": ErrorMessage.BAD_REQUEST.value,
+        },
+    },
 )
 async def assign_task(
     task_id: uuid.UUID,
@@ -196,6 +224,23 @@ async def assign_task(
     response_model=TaskResponse,
     status_code=status.HTTP_200_OK,
     summary="Chuyển trạng thái (status) của task",
+    responses={
+        status.HTTP_400_BAD_REQUEST: {
+            "description": ErrorMessage.PROJECT_ARCHIVED.value,
+        },
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": ErrorMessage.INVALID_CREDENTIAL.value,
+        },
+        status.HTTP_403_FORBIDDEN: {
+            "description": ErrorMessage.WORKSPACE_EDITOR_REQUIRED.value,
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": ErrorMessage.TASK_NOT_FOUND.value,
+        },
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
+            "description": ErrorMessage.BAD_REQUEST.value,
+        },
+    },
 )
 async def update_task_status(
     task_id: uuid.UUID,
@@ -245,6 +290,20 @@ async def delete_task(
     response_model=list[LabelResponse],
     status_code=status.HTTP_200_OK,
     summary="Lấy danh sách label đã gắn cho task",
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": ErrorMessage.INVALID_CREDENTIAL.value,
+        },
+        status.HTTP_403_FORBIDDEN: {
+            "description": ErrorMessage.WORKSPACE_MEMBER_NOT_FOUND.value,
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": ErrorMessage.TASK_NOT_FOUND.value,
+        },
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
+            "description": ErrorMessage.BAD_REQUEST.value,
+        },
+    },
 )
 async def get_task_labels(
     task_id: uuid.UUID,
@@ -263,6 +322,9 @@ async def get_task_labels(
         status.HTTP_400_BAD_REQUEST: {
             "description": f"{ErrorMessage.PROJECT_ARCHIVED.value} / {ErrorMessage.LABEL_NOT_IN_PROJECT.value}",
         },
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": ErrorMessage.INVALID_CREDENTIAL.value,
+        },
         status.HTTP_403_FORBIDDEN: {
             "description": ErrorMessage.WORKSPACE_EDITOR_REQUIRED.value,
         },
@@ -271,6 +333,9 @@ async def get_task_labels(
         },
         status.HTTP_409_CONFLICT: {
             "description": ErrorMessage.TASK_LABEL_ALREADY_EXISTS.value,
+        },
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
+            "description": ErrorMessage.BAD_REQUEST.value,
         },
     },
 )
@@ -293,11 +358,17 @@ async def assign_label_to_task(
         status.HTTP_400_BAD_REQUEST: {
             "description": ErrorMessage.PROJECT_ARCHIVED.value,
         },
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": ErrorMessage.INVALID_CREDENTIAL.value,
+        },
         status.HTTP_403_FORBIDDEN: {
             "description": ErrorMessage.WORKSPACE_EDITOR_REQUIRED.value,
         },
         status.HTTP_404_NOT_FOUND: {
             "description": f"{ErrorMessage.TASK_NOT_FOUND.value} / {ErrorMessage.TASK_LABEL_NOT_FOUND.value}",
+        },
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
+            "description": ErrorMessage.BAD_REQUEST.value,
         },
     },
 )
@@ -319,11 +390,17 @@ async def remove_label_from_task(
         status.HTTP_400_BAD_REQUEST: {
             "description": ErrorMessage.PROJECT_ARCHIVED.value,
         },
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": ErrorMessage.INVALID_CREDENTIAL.value,
+        },
         status.HTTP_403_FORBIDDEN: {
             "description": ErrorMessage.WORKSPACE_EDITOR_REQUIRED.value,
         },
         status.HTTP_404_NOT_FOUND: {
             "description": ErrorMessage.TASK_NOT_FOUND.value,
+        },
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
+            "description": ErrorMessage.BAD_REQUEST.value,
         },
     },
 )
@@ -342,11 +419,17 @@ async def create_task_comment(
     status_code=status.HTTP_200_OK,
     summary="Lấy danh sách bình luận của task",
     responses={
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": ErrorMessage.INVALID_CREDENTIAL.value,
+        },
         status.HTTP_403_FORBIDDEN: {
             "description": ErrorMessage.WORKSPACE_MEMBER_NOT_FOUND.value,
         },
         status.HTTP_404_NOT_FOUND: {
             "description": ErrorMessage.TASK_NOT_FOUND.value,
+        },
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
+            "description": ErrorMessage.BAD_REQUEST.value,
         },
     },
 )
