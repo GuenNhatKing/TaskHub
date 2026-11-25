@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from typing import Annotated
 
 from pydantic import AfterValidator, EmailStr, StringConstraints
@@ -9,6 +10,7 @@ from taskhub.core.constants import (
     PASSWORD_LENGTH,
     PASSWORD_MIN_LENGTH,
     PROJECT_NAME_LENGTH,
+    TITLE_LENGTH,
     WORKSPACE_NAME_LENGTH,
 )
 from taskhub.core.messages import ErrorMessage
@@ -72,4 +74,21 @@ ValidProjectName = Annotated[
 ValidDescription = Annotated[
     str,
     StringConstraints(strip_whitespace=True, min_length=0, max_length=DESC_LENGTH),
+]
+
+ValidTaskTitle = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=TITLE_LENGTH),
+]
+
+
+def ensure_timezone_aware(value: datetime) -> datetime:
+    if value.tzinfo is None or value.tzinfo.utcoffset(value) is None:
+        return value.replace(tzinfo=UTC)
+    return value
+
+
+AwareDatetime = Annotated[
+    datetime,
+    AfterValidator(ensure_timezone_aware),
 ]
