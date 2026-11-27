@@ -10,7 +10,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data #  Gắn ổ đĩa ảo postgres_data vào nơi Postgres lưu dữ liệu.
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-taskhub}"]
       interval: 5s
@@ -21,8 +21,6 @@ services:
     image: redis:7-alpine
     container_name: taskhub-redis
     restart: unless-stopped
-    # Giúp Redis ghi lại mọi thao tác thay đổi dữ liệu xuống ổ cứng 
-    # để không bị mất sạch cache/queue khi container khởi động lại
     command: redis-server --appendonly yes 
     ports:
       - "6379:6379"
@@ -34,6 +32,23 @@ services:
       timeout: 5s
       retries: 5
 
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: taskhub-migrate
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-taskhub}
+    # Ghi đè lệnh CMD mặc định của Dockerfile để chạy migration
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      db:
+        condition: service_healthy
+    # Đảm bảo container tự tắt sau khi chạy xong (không restart)
+    restart: "no"
+
   api:
     build:
       context: .
@@ -43,7 +58,6 @@ services:
     env_file:
       - .env
     environment:
-      # Ghi đè host thành tên service trong mạng nội bộ Docker
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-taskhub}
       REDIS_URL: redis://redis:6379/0
     ports:
@@ -53,6 +67,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      # Chỉ khởi chạy API sau khi migrate chạy xong và thành công
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   postgres_data:
