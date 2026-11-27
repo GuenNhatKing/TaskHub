@@ -1,12 +1,22 @@
+import hashlib
+import json
+import logging
 import uuid
 from datetime import UTC, datetime
 
+from redis import RedisError
+from redis.asyncio import Redis
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from taskhub.core.constants import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
+from taskhub.core.constants import (
+    DEFAULT_PAGE,
+    DEFAULT_PAGE_SIZE,
+    TASKS_CACHE_TTL_SECONDS,
+)
 from taskhub.core.enums import Priority, TaskStatus, WorkspaceMemberRole
 from taskhub.core.messages import ErrorMessage
+from taskhub.core.redis import delete_keys_by_pattern
 from taskhub.exceptions import NotFoundException
 from taskhub.exceptions.bad_request_ex import BadRequestException
 from taskhub.models import Task, User
@@ -15,9 +25,16 @@ from taskhub.models.workspace_member import WorkspaceMember
 from taskhub.repos.base import Page
 from taskhub.repos.task import TaskRepository
 from taskhub.repos.workspace_member import WorkspaceMemberRepository
-from taskhub.schemas.task import TaskCreateRequest, TaskUpdateRequest
+from taskhub.schemas.task import (
+    TaskCreateRequest,
+    TaskListResponse,
+    TaskResponse,
+    TaskUpdateRequest,
+)
 from taskhub.services.project_service import ProjectService
 from taskhub.services.workspace_service import WorkspaceService
+
+logger = logging.getLogger(__name__)
 
 
 class TaskService:
@@ -26,12 +43,44 @@ class TaskService:
         db: AsyncSession,
         project_service: ProjectService,
         workspace_service: WorkspaceService,
+        redis: Redis,
     ):
         self.db = db
         self.task_repository = TaskRepository(db)
         self.workspace_member_repository = WorkspaceMemberRepository(db)
         self.project_service = project_service
         self.workspace_service = workspace_service
+        self.redis = redis
+
+    @staticmethod
+    def _build_tasks_cache_key(
+        project_id: uuid.UUID,
+        status: TaskStatus | None,
+        priority: Priority | None,
+        assignee_id: uuid.UUID | None,
+        search: str | None,
+        page: int,
+        page_size: int,
+    ) -> str:
+        # Biến từ điển Python (dict) thành chuỗi (str) để băm
+        raw_params = json.dumps(
+            {
+                "status": status.value if status else None,
+                "priority": priority.value if priority else None,
+                "assignee_id": str(assignee_id) if assignee_id else None,
+                "search": search.strip().lower() if search else None,
+                "page": page,
+                "page_size": page_size,
+            },
+            sort_keys=True,
+        )
+        params_hash = hashlib.sha256(raw_params.encode()).hexdigest()[:16]
+        return f"tasks:project:{project_id}:{params_hash}"
+
+    async def _invalidate_project_tasks_cache(self, project_id: uuid.UUID) -> None:
+        if self.redis is None:
+            return
+        await delete_keys_by_pattern(self.redis, f"tasks:project:{project_id}:*")
 
     async def get_task_context(
         self,
@@ -132,6 +181,8 @@ class TaskService:
             await self.db.rollback()
             raise
 
+        # Invalidate cache sau khi tạo task thành công
+        await self._invalidate_project_tasks_cache(project_id)
         return task
 
     async def get_project_tasks(
@@ -144,7 +195,7 @@ class TaskService:
         search: str | None = None,
         page: int = DEFAULT_PAGE,
         page_size: int = DEFAULT_PAGE_SIZE,
-    ) -> Page[Task]:
+    ) -> TaskListResponse:
         project = await self.project_service.get_project(project_id)
 
         # Kiểm tra current_user là thành viên workspace
@@ -153,7 +204,27 @@ class TaskService:
             workspace_id=project.workspace_id,
         )
 
-        return await self.task_repository.get_by_project_id(
+        cache_key = self._build_tasks_cache_key(
+            project_id=project.id,
+            status=status,
+            priority=priority,
+            assignee_id=assignee_id,
+            search=search,
+            page=page,
+            page_size=page_size,
+        )
+
+        # Kiểm tra Cache Hit
+        if self.redis is not None:
+            try:
+                cached_json = await self.redis.get(cache_key)
+                if cached_json is not None:
+                    return TaskListResponse.model_validate_json(cached_json)
+            except RedisError as exc:
+                logger.warning("Đọc cache Redis thất bại (%s): %s", cache_key, exc)
+
+        # Cache Miss -> Query DB
+        page_result = await self.task_repository.get_by_project_id(
             project_id=project.id,
             page=page,
             page_size=page_size,
@@ -162,6 +233,26 @@ class TaskService:
             assignee_id=assignee_id,
             search=search,
         )
+
+        response_data = TaskListResponse(
+            items=[TaskResponse.model_validate(item) for item in page_result.items],
+            total=page_result.total,
+            page=page_result.page,
+            page_size=page_result.page_size,
+            total_pages=page_result.total_pages,
+        )
+
+        if self.redis is not None:
+            try:
+                await self.redis.set(
+                    cache_key,
+                    response_data.model_dump_json(),
+                    ex=TASKS_CACHE_TTL_SECONDS,
+                )
+            except RedisError as exc:
+                logger.warning("Ghi cache Redis thất bại (%s): %s", cache_key, exc)
+
+        return response_data
 
     async def get_task_detail(
         self,
@@ -217,6 +308,9 @@ class TaskService:
             await self.db.rollback()
             raise
 
+        # Invalidate cache sau khi cập nhật task thành công
+        await self._invalidate_project_tasks_cache(task.project_id)
+
         return task
 
     async def delete_task(
@@ -242,3 +336,6 @@ class TaskService:
         except SQLAlchemyError:
             await self.db.rollback()
             raise
+
+        # Invalidate cache sau khi xóa task thành công
+        await self._invalidate_project_tasks_cache(task.project_id)

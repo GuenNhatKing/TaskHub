@@ -6,6 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     DATABASE_URL: str
+    REDIS_URL: str
     JWT_SECRET_KEY: SecretStr = Field(..., min_length=32)
     JWT_ALGORITHM: Literal["HS256"] = "HS256"
     JWT_ISSUER: str
