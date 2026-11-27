@@ -6,4 +6,5 @@ pytest_plugins = [
     "tests.fixture.db_session",
     "tests.fixture.db_session_factory",
     "tests.fixture.other_user",
+    "tests.fixture.fake_redis",
 ]

@@ -3,8 +3,10 @@ from typing import Annotated
 
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from taskhub.core.redis import get_redis
 from taskhub.core.security import decode_access_token
 from taskhub.exceptions.auth_ex import InvalidTokenException
 from taskhub.exceptions.not_found_ex import NotFoundException
@@ -78,11 +80,13 @@ def get_task_service(
     db: Annotated[AsyncSession, Depends(get_db)],
     project_service: Annotated[ProjectService, Depends(get_project_service)],
     workspace_service: Annotated[WorkspaceService, Depends(get_workspace_service)],
+    redis: Annotated[Redis, Depends(get_redis)],
 ) -> TaskService:
     return TaskService(
         db=db,
         project_service=project_service,
         workspace_service=workspace_service,
+        redis=redis,
     )
 
 

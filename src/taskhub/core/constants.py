@@ -30,3 +30,6 @@ MAX_PAGE_SIZE = 100
 
 LABEL_NAME_LENGTH = 100
 COMMENT_CONTENT_LENGTH = 1000
+
+# Thời gian tồn tại của dữ liệu trong bộ nhớ đệm
+TASKS_CACHE_TTL_SECONDS = 300  # 5 phút
